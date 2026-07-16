@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaporPublik | Masuk / Daftar</title>
+    <meta name="description" content="Platform pengaduan masyarakat yang aman dan transparan">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        * { scroll-behavior: smooth; }
+
+        body {
+            font-family:'Plus Jakarta Sans',sans-serif;
+            background: #020617;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated gradient background */
+        .bg-gradient-animated {
+            background: linear-gradient(135deg, #064e3b 0%, #020617 50%, #0f172a 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .glass-strong {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(32px) saturate(200%);
+            -webkit-backdrop-filter: blur(32px) saturate(200%);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Input fields */
+        .input-field {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #fff;
+            width: 100%;
+            border-radius: .875rem;
+            padding: .9rem 1rem .9rem 3rem;
+            font-size: .875rem;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .input-field::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .input-field:focus {
+            background: rgba(255,255,255,0.08);
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16,185,129,.15);
+            transform: translateY(-1px);
+        }
+
+        .input-field.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+            animation: shake 0.5s;
+        }
+
+        .input-field.success {
+            border-color: #10b981;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: #fff;
+            border: none;
+            border-radius: 1rem;
+            padding: 1.1rem;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(16,185,129,.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Social buttons */
+        .social-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 0.875rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #fff;
+        }
+
+        .social-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .social-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Invisible overlay that holds Google's real Sign-In button on top
+           of our custom-styled button, so clicks always land on Google's
+           actual, fully functional button. */
+        .google-btn-mount {
+            z-index: 5;
+            display: flex;
+            cursor: pointer;
+        }
+        .google-btn-mount iframe {
+            width: 100% !important;
+        }
+        .google-btn-mount > div {
+            width: 100% !important;
+        }
+
+        /* Google button specific */
+        .google-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.15);
+        }
+
+        .google-btn:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.25);
+        }
+
+        /* Animations */
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-in-left {
+            animation: slideInLeft .6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-in-right {
+            animation: slideInRight .6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Tab styles */
+        .tab-active {
+            background: linear-gradient(135deg, rgba(16,185,129,.2), rgba(16,185,129,.1));
+            color: #10b981;
+            border-color: #10b981;
+            box-shadow: 0 4px 15px rgba(16,185,129,.2);
+        }
+
+        /* Password strength */
+        .strength-bar {
+            height: 4px;
+            border-radius: 2px;
+            transition: all .4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            font-size: .875rem;
+            font-weight: 600;
+            z-index: 9999;
+            animation: fadeSlide .4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 360px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Modal */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-bg.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: rgba(15,23,42,0.95);
+            backdrop-filter: blur(32px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 2rem;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+            animation: fadeSlide .4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: .1;
+            animation: float 8s ease-in-out infinite;
+            filter: blur(40px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(-15px) rotate(240deg); }
+        }
+
+        /* Gradient orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 30px) scale(1.05); }
+        }
+
+        /* Checkbox custom */
+        .checkbox-custom {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .checkbox-custom:checked {
+            background: linear-gradient(135deg, #059669, #10b981);
+            border-color: #10b981;
+        }
+
+        .checkbox-custom:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Illustration styles */
+        .illustration-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        /* Feature list */
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateX(5px);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .split-layout {
+                flex-direction: column;
+            }
+
+            .branding-side {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-box {
+                border-radius: 1.5rem;
+            }
+
+            .glass-strong {
+                border-radius: 1.5rem !important;
+            }
+        }
+
+        /* Loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            border: 0;
+        }
+
+        /* Focus visible for keyboard navigation */
+        *:focus-visible {
+            outline: 2px solid #10b981;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-3 sm:p-4 relative bg-gradient-animated">
+
+<!-- Loading Screen -->
+<div id="loadingScreen" class="fixed inset-0 bg-[#020617] z-[9999] flex items-center justify-center">
+    <div class="text-center">
+        <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <i data-lucide="shield-check" class="w-8 h-8 text-white"></i>
+        </div>
+        <div class="text-white font-bold text-lg">LaporPublik</div>
+        <div class="text-slate-400 text-sm mt-2">Memuat...</div>
+    </div>
+</div>
+
+<!-- Animated background orbs -->
+<div class="orb w-96 h-96 bg-emerald-500 top-0 left-0" style="animation-delay: 0s;"></div>
+<div class="orb w-80 h-80 bg-blue-500 bottom-0 right-0" style="animation-delay: 5s;"></div>
+<div class="orb w-72 h-72 bg-teal-500 top-1/2 left-1/2" style="animation-delay: 10s;"></div>
+
+<!-- Floating particles -->
+<div class="particle w-32 h-32 bg-emerald-400 top-20 left-20" style="animation-delay:0s"></div>
+<div class="particle w-24 h-24 bg-blue-400 top-40 right-32" style="animation-delay:2s"></div>
+<div class="particle w-40 h-40 bg-emerald-300 bottom-20 left-40" style="animation-delay:1s"></div>
+<div class="particle w-20 h-20 bg-teal-400 bottom-40 right-20" style="animation-delay:3s"></div>
+
+<!-- Main container -->
+<div class="w-full max-w-6xl relative z-10 split-layout flex gap-8 items-center">
+
+    <!-- Left side - Branding (Desktop only) -->
+    <div class="branding-side hidden lg:flex flex-1 animate-in-left">
+        <div class="illustration-card max-w-md">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/30">
+                    <i data-lucide="shield-check" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-extrabold text-white">Lapor<span class="text-emerald-400">Publik</span></div>
+                    <div class="text-xs text-slate-400">Platform Pengaduan Resmi</div>
+                </div>
+            </div>
+
+            <!-- Hero text -->
+            <h2 class="text-4xl font-black text-white mb-4 leading-tight">
+                Suarakan Aspirasi,<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">Ubah Indonesia.</span>
+            </h2>
+
+            <p class="text-slate-400 mb-8 leading-relaxed">
+                Platform pengaduan masyarakat yang aman, terverifikasi, dan transparan. Setiap laporan Anda langsung ditindaklanjuti.
+            </p>
+
+            <!-- Features -->
+            <div class="space-y-3 mb-8">
+                <div class="feature-item">
+                    <div class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white">Keamanan Terjamin</div>
+                        <div class="text-xs text-slate-400">Enkripsi end-to-end</div>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center shrink-0">
+                        <i data-lucide="zap" class="w-5 h-5 text-blue-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white">Respons Cepat</div>
+                        <div class="text-xs text-slate-400">SLA 24 jam penanganan</div>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
+                        <i data-lucide="eye" class="w-5 h-5 text-purple-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white">Transparan</div>
+                        <div class="text-xs text-slate-400">Tracking real-time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
+                <div class="text-center">
+                    <div class="text-2xl font-black text-emerald-400">12K+</div>
+                    <div class="text-xs text-slate-400">Laporan</div>
+                </div>
+                <div class="text-center border-x border-white/10">
+                    <div class="text-2xl font-black text-blue-400">98%</div>
+                    <div class="text-xs text-slate-400">Resolved</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-black text-purple-400">8K+</div>
+                    <div class="text-xs text-slate-400">Pengguna</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right side - Form -->
+    <div class="w-full max-w-md animate-in-right">
+        <!-- Logo (Mobile) -->
+        <div class="text-center mb-8 lg:hidden">
+            <a href="/" class="inline-flex items-center gap-3 group">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/30 group-hover:rotate-12 transition-transform">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="text-2xl font-extrabold text-white">Lapor<span class="text-emerald-400">Publik</span></span>
+            </a>
+            <p class="text-slate-400 text-sm mt-3">Platform Pengaduan Masyarakat Terintegrasi</p>
+        </div>
+
+        <!-- Form container -->
+        <div class="glass-strong rounded-3xl p-5 sm:p-8 shadow-2xl">
+            <!-- Tab switcher -->
+            <div class="flex gap-2 mb-8 p-1.5 bg-white/5 rounded-2xl border border-white/10" role="tablist" aria-label="Pilihan masuk atau daftar">
+                <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all tab-active border border-transparent" role="tab" aria-selected="true" aria-controls="loginForm">
+                    Masuk
+                </button>
+                <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all text-slate-400 border border-transparent" role="tab" aria-selected="false" aria-controls="registerForm">
+                    Daftar
+                </button>
+            </div>
+
+            <!-- ======= LOGIN FORM ======= -->
+            <form id="loginForm" onsubmit="handleLogin(event)" role="tabpanel" aria-labelledby="tab-login">
+                <div class="space-y-5">
+                    <!-- Email -->
+                    <div>
+                        <label for="loginEmail" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                            Email
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="email" id="loginEmail" class="input-field" placeholder="nama@email.com" required autocomplete="email" aria-required="true">
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label for="loginPassword" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                            Password
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="password" id="loginPassword" class="input-field pr-20" placeholder="Masukkan password" required autocomplete="current-password" aria-required="true">
+                            <button type="button" onclick="togglePw('loginPassword','eyeLogin')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1" aria-label="Toggle password visibility">
+                                <i id="eyeLogin" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember me & Forgot password -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="rememberMe" class="checkbox-custom">
+                            <span class="text-sm text-slate-400">Ingat saya</span>
+                        </label>
+                        <button type="button" onclick="openForgotPasswordModal()" class="text-sm text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
+                            Lupa password?
+                        </button>
+                    </div>
+
+                    <!-- Error message -->
+                    <div id="loginError" class="hidden text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-2" role="alert">
+                        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                        <span id="loginErrorMsg"></span>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" id="loginBtn" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <i data-lucide="log-in" class="w-5 h-5"></i>
+                        <span>Masuk Sekarang</span>
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="relative py-2">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-white/10"></div>
+                        </div>
+                        <div class="relative flex justify-center">
+                            <span class="bg-transparent px-3 text-slate-500 text-xs font-semibold">atau masuk dengan</span>
+                        </div>
+                    </div>
+
+                    <!-- Social login -->
+                    <div class="grid grid-cols-1">
+                        <div class="relative">
+                            <button type="button" id="googleLoginBtn" onclick="handleGoogleLogin()" class="social-btn google-btn w-full" aria-label="Masuk dengan Google">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                Google
+                            </button>
+                            <!-- Google's real button renders here, invisible, on top of the styled button -->
+                            <div id="googleLoginBtnMount" class="absolute inset-0 opacity-0 overflow-hidden google-btn-mount" aria-hidden="true"></div>
+                        </div>
+                    </div>
+
+                    <!-- Register link -->
+                    <p class="text-center text-slate-400 text-sm pt-2">
+                        Belum punya akun?
+                        <button type="button" onclick="switchTab('register')" class="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Daftar sekarang</button>
+                    </p>
+                </div>
+            </form>
+
+            <!-- ======= REGISTER FORM ======= -->
+            <form id="registerForm" class="hidden" onsubmit="handleRegister(event)" role="tabpanel" aria-labelledby="tab-register">
+                <div class="space-y-4">
+                    <!-- Name -->
+                    <div>
+                        <label for="regName" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                            Nama Lengkap <span class="text-red-400" aria-label="Wajib diisi">*</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="regName" class="input-field" placeholder="Nama sesuai KTP" required aria-required="true">
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="regEmail" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                            Email <span class="text-red-400" aria-label="Wajib diisi">*</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="email" id="regEmail" class="input-field" placeholder="nama@email.com" required aria-required="true">
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label for="regPhone" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                            No. HP <span class="text-xs text-slate-500 font-normal">(opsional)</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="phone" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="regPhone" class="input-field" placeholder="08xx" pattern="[0-9]+" title="Hanya angka" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <!-- NIK -->
+                    <div>
+                        <label for="regNIK" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                            NIK <span class="text-xs text-slate-500 font-normal">(opsional)</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="credit-card" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="text" id="regNIK" class="input-field" placeholder="16 digit NIK" maxlength="16" pattern="[0-9]{16}" title="NIK harus 16 digit angka" inputmode="numeric">
+                            <div id="nikCount" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">0/16</div>
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label for="regPassword" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                            Password <span class="text-red-400" aria-label="Wajib diisi">*</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="password" id="regPassword" class="input-field pr-20" placeholder="Min. 8 karakter" required oninput="checkStrength(this.value)" aria-required="true">
+                            <button type="button" onclick="togglePw('regPassword','eyeReg')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1" aria-label="Toggle password visibility">
+                                <i id="eyeReg" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <!-- Password strength indicator -->
+                        <div class="flex gap-1.5 mt-2" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="4" aria-label="Kekuatan password">
+                            <div class="strength-bar flex-1 bg-white/10" id="s1"></div>
+                            <div class="strength-bar flex-1 bg-white/10" id="s2"></div>
+                            <div class="strength-bar flex-1 bg-white/10" id="s3"></div>
+                            <div class="strength-bar flex-1 bg-white/10" id="s4"></div>
+                        </div>
+                        <p id="strengthText" class="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5"></p>
+                    </div>
+
+                    <!-- Confirm password -->
+                    <div>
+                        <label for="regConfirm" class="block text-xs font-bold text-slate-300 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                            Konfirmasi Password <span class="text-red-400" aria-label="Wajib diisi">*</span>
+                        </label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <input type="password" id="regConfirm" class="input-field pr-20" placeholder="Ulangi password" required aria-required="true">
+                            <button type="button" onclick="togglePw('regConfirm','eyeConfirm')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1" aria-label="Toggle password visibility">
+                                <i id="eyeConfirm" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Terms -->
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="regTerms" class="checkbox-custom mt-0.5" required aria-required="true">
+                        <span class="text-xs text-slate-400 leading-relaxed">
+                            Saya menyetujui <a href="#" class="text-emerald-400 hover:underline font-semibold">Syarat & Ketentuan</a> serta <a href="#" class="text-emerald-400 hover:underline font-semibold">Kebijakan Privasi</a> LaporPublik.
+                        </span>
+                    </label>
+
+                    <!-- Error/Success messages -->
+                    <div id="regError" class="hidden text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-2" role="alert">
+                        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                        <span id="regErrorMsg"></span>
+                    </div>
+                    <div id="regSuccess" class="hidden text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 flex items-center gap-2" role="status">
+                        <i data-lucide="check-circle" class="w-4 h-4 shrink-0"></i>
+                        <span id="regSuccessMsg"></span>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" id="regBtn" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                        <span>Buat Akun Gratis</span>
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="relative py-2">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-white/10"></div>
+                        </div>
+                        <div class="relative flex justify-center">
+                            <span class="bg-transparent px-3 text-slate-500 text-xs font-semibold">atau daftar dengan</span>
+                        </div>
+                    </div>
+
+                    <!-- Social register -->
+                    <div class="grid grid-cols-1">
+                        <div class="relative">
+                            <button type="button" id="googleRegisterBtn" onclick="handleGoogleLogin()" class="social-btn google-btn w-full" aria-label="Daftar dengan Google">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                Google
+                            </button>
+                            <div id="googleRegisterBtnMount" class="absolute inset-0 opacity-0 overflow-hidden google-btn-mount" aria-hidden="true"></div>
+                        </div>
+                    </div>
+
+                    <!-- Login link -->
+                    <p class="text-center text-slate-400 text-sm pt-2">
+                        Sudah punya akun?
+                        <button type="button" onclick="switchTab('login')" class="text-emerald-400 font-bold hover:text-emerald-300 transition-colors">Masuk</button>
+                    </p>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security badges -->
+        <div class="text-center mt-6 flex flex-wrap items-center justify-center gap-4">
+            <div class="flex items-center gap-1.5 text-slate-500 text-xs">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                <span>SSL Enkripsi</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-500 text-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i>
+                <span>Data Terlindungi</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-500 text-xs">
+                <i data-lucide="eye-off" class="w-3.5 h-3.5 text-emerald-500"></i>
+                <span>Anonim Tersedia</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="modal-bg">
+    <div class="modal-box p-8">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <i data-lucide="key" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">Lupa Password</h3>
+                    <p class="text-xs text-slate-400">Reset password akun Anda</p>
+                </div>
+            </div>
+            <button onclick="closeForgotPasswordModal()" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Tutup modal">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div id="forgotStep1">
+            <div class="mb-6">
+                <label for="forgotEmail" class="block text-sm font-semibold text-slate-300 mb-2">Email Akun</label>
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="email" id="forgotEmail" class="input-field pl-12" placeholder="nama@email.com">
+                </div>
+                <p class="text-xs text-slate-500 mt-2">Masukkan email yang terdaftar. Link reset akan dikirim ke email Anda.</p>
+            </div>
+
+            <div id="forgotError" class="hidden text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                <span id="forgotErrorMsg"></span>
+            </div>
+
+            <button onclick="sendForgotPassword()" id="forgotSendBtn" class="btn-primary w-full flex items-center justify-center gap-2 mb-3">
+                <i data-lucide="send" class="w-5 h-5"></i>
+                <span>Kirim Link Reset</span>
+            </button>
+
+            <button onclick="closeForgotPasswordModal()" class="w-full py-3 text-sm text-slate-400 hover:text-white transition-colors">
+                Batal
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configuration
+let appConfig = {
+    googleClientId: '',
+    googleOAuthAvailable: false,
+    appName: 'LaporPublik'
+};
+
+// Initialize app
+async function initApp() {
+    try {
+        // Fetch configuration from backend
+        const response = await fetch('/api/auth/config');
+        const data = await response.json();
+
+        // BUG FIX: backend returns snake_case keys (google_client_id,
+        // google_oauth_available, ...) but this used to be assigned directly
+        // as `appConfig = data.config`, so every appConfig.googleClientId /
+        // appConfig.googleOAuthAvailable lookup below was `undefined`. That
+        // silently disabled Google Sign-In no matter how it was configured
+        // on the server. Map the fields explicitly instead.
+        if (data.ok && data.config) {
+            appConfig = {
+                googleClientId: data.config.google_client_id || '',
+                googleOAuthAvailable: !!data.config.google_oauth_available,
+                appName: data.config.app_name || 'LaporPublik'
+            };
+        }
+
+        // Initialize Google Sign-In if available
+        if (typeof google !== 'undefined' && appConfig.googleOAuthAvailable && appConfig.googleClientId) {
+            google.accounts.id.initialize({
+                client_id: appConfig.googleClientId,
+                callback: handleGoogleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: true,
+                use_fedcm_for_prompt: true
+            });
+            renderGoogleButtons();
+        } else if (typeof google === 'undefined') {
+            console.warn('Google Identity Services script gagal dimuat (mungkin diblokir adblocker/jaringan).');
+        }
+
+        // Hide loading screen
+        setTimeout(() => {
+            document.getElementById('loadingScreen').style.opacity = '0';
+            document.getElementById('loadingScreen').style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none';
+            }, 500);
+        }, 1000);
+
+        // Check if user is already logged in
+        checkAuthStatus();
+
+    } catch (error) {
+        console.error('Failed to load config:', error);
+        // Hide loading screen even on error
+        document.getElementById('loadingScreen').style.display = 'none';
+    }
+
+    lucide.createIcons();
+}
+
+// Check authentication status
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/me', { credentials: 'include' });
+        const data = await response.json();
+
+        if (data.ok) {
+            const redirectUrl = data.user.role === 'user' ? '/dashboard/user' : '/dashboard/admin';
+            window.location.href = redirectUrl;
+        }
+    } catch (error) {
+        // User not logged in, show login page
+    }
+}
+
+// Tab switching
+function switchTab(t) {
+    const isLogin = t === 'login';
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+
+    if (isLogin) {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        tabLogin.classList.add('tab-active');
+        tabLogin.classList.remove('text-slate-400');
+        tabLogin.setAttribute('aria-selected', 'true');
+        tabRegister.classList.remove('tab-active');
+        tabRegister.classList.add('text-slate-400');
+        tabRegister.setAttribute('aria-selected', 'false');
+        document.getElementById('loginEmail').focus();
+    } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        tabRegister.classList.add('tab-active');
+        tabRegister.classList.remove('text-slate-400');
+        tabRegister.setAttribute('aria-selected', 'true');
+        tabLogin.classList.remove('tab-active');
+        tabLogin.classList.add('text-slate-400');
+        tabLogin.setAttribute('aria-selected', 'false');
+        document.getElementById('regName').focus();
+    }
+
+    // Clear errors
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('regError').classList.add('hidden');
+    document.getElementById('regSuccess').classList.add('hidden');
+
+    // The tab just being shown was hidden (width 0) when we first tried to
+    // render the Google button overlay, so its size may be off — redo it now.
+    if (typeof renderGoogleButtons === 'function') {
+        setTimeout(renderGoogleButtons, 50);
+    }
+}
+
+// Toggle password visibility
+function togglePw(inputId, iconId) {
+    const inp = document.getElementById(inputId);
+    const ico = document.getElementById(iconId);
+    const isPass = inp.type === 'password';
+    inp.type = isPass ? 'text' : 'password';
+    ico.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+    lucide.createIcons();
+}
+
+// Password strength checker
+function checkStrength(pw) {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    const colors = ['bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-500'];
+    const labels = ['', 'Lemah', 'Sedang', 'Kuat', 'Sangat Kuat'];
+
+    for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById('s'+i);
+        bar.className = 'strength-bar flex-1 ' + (i <= score ? colors[score-1] : 'bg-white/10');
+    }
+
+    const strengthText = document.getElementById('strengthText');
+    strengthText.textContent = score > 0 ? labels[score] : '';
+    strengthText.className = 'text-xs mt-1.5 flex items-center gap-1.5 ' +
+        (score <= 2 ? 'text-red-400' : score === 3 ? 'text-yellow-400' : 'text-emerald-400');
+
+    // Update aria-valuenow
+    document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow', score);
+}
+
+// Loading state
+function setLoading(btnId, loading, text, icon) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.innerHTML = loading
+        ? `<svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Memproses...`
+        : `<i data-lucide="${icon}" class="w-5 h-5"></i> <span>${text}</span>`;
+    if (!loading) lucide.createIcons();
+}
+
+// Show error
+function showError(prefix, msg) {
+    const el = document.getElementById(prefix+'Error');
+    document.getElementById(prefix+'ErrorMsg').textContent = msg;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+    setTimeout(() => {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+    }, 5000);
+}
+
+// Show success
+function showSuccess(prefix, msg) {
+    const el = document.getElementById(prefix+'Success');
+    document.getElementById(prefix+'SuccessMsg').textContent = msg;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+}
+
+// Handle email/password login
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const remember = document.getElementById('rememberMe').checked;
+
+    document.getElementById('loginError').classList.add('hidden');
+    setLoading('loginBtn', true);
+
+    try {
+        const r = await fetch('/api/auth/login', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            credentials:'include',
+            body: JSON.stringify({ email, password, remember })
+        });
+        const d = await r.json();
+
+        if (d.ok) {
+            setLoading('loginBtn', false, 'Masuk Sekarang', 'log-in');
+            showToast('success', `Selamat datang, ${d.user.full_name}!`);
+            setTimeout(() => window.location.href = d.redirect, 800);
+        } else {
+            setLoading('loginBtn', false, 'Masuk Sekarang', 'log-in');
+            showError('login', d.msg);
+            // Add error class to inputs
+            document.getElementById('loginEmail').classList.add('error');
+            document.getElementById('loginPassword').classList.add('error');
+            setTimeout(() => {
+                document.getElementById('loginEmail').classList.remove('error');
+                document.getElementById('loginPassword').classList.remove('error');
+            }, 2000);
+        }
+    } catch(err) {
+        setLoading('loginBtn', false, 'Masuk Sekarang', 'log-in');
+        showError('login', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    }
+}
+
+// Handle register
+async function handleRegister(e) {
+    e.preventDefault();
+    const pw = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regConfirm').value;
+    const terms = document.getElementById('regTerms').checked;
+
+    document.getElementById('regError').classList.add('hidden');
+    document.getElementById('regSuccess').classList.add('hidden');
+
+    if (!terms) {
+        showError('reg', 'Anda harus menyetujui Syarat & Ketentuan.');
+        return;
+    }
+
+    if (pw !== confirm) {
+        showError('reg', 'Password dan konfirmasi tidak cocok.');
+        document.getElementById('regConfirm').classList.add('error');
+        setTimeout(() => document.getElementById('regConfirm').classList.remove('error'), 2000);
+        return;
+    }
+    if (pw.length < 8) {
+        showError('reg', 'Password minimal 8 karakter.');
+        return;
+    }
+
+    setLoading('regBtn', true);
+
+    try {
+        const r = await fetch('/api/auth/register', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            credentials:'include',
+            body: JSON.stringify({
+                full_name: document.getElementById('regName').value.trim(),
+                email: document.getElementById('regEmail').value.trim(),
+                phone: document.getElementById('regPhone').value.trim(),
+                nik: document.getElementById('regNIK').value.trim(),
+                password: pw
+            })
+        });
+        const d = await r.json();
+
+        if (d.ok) {
+            showSuccess('reg', d.msg + ' Silakan login sekarang.');
+            setLoading('regBtn', false, 'Buat Akun Gratis', 'user-plus');
+            setTimeout(() => switchTab('login'), 2500);
+        } else {
+            showError('reg', d.msg);
+            setLoading('regBtn', false, 'Buat Akun Gratis', 'user-plus');
+        }
+    } catch(err) {
+        setLoading('regBtn', false, 'Buat Akun Gratis', 'user-plus');
+        showError('reg', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    }
+}
+
+// ============ GOOGLE OAUTH ============
+// NOTE ON THE OLD IMPLEMENTATION:
+// The previous code called google.accounts.id.prompt() and, if the One Tap
+// dialog didn't show (which is common — browsers with 3rd-party cookies
+// blocked, returning users, Safari/Firefox, etc.), it redirected the user
+// to Google's authorization-code OAuth URL pointing at
+// `/api/auth/google/callback`. That route never existed in app.py, so the
+// user landed on a 404 after picking their Google account — a dead end.
+//
+// FIX: instead of trying to reimplement a full server-side auth-code
+// exchange, we render Google's own official Sign-In button (which reliably
+// returns an ID token via handleGoogleCredentialResponse — the endpoint the
+// backend already supports) invisibly on top of our custom-styled buttons.
+// The user sees our themed button, but the click is actually handled by
+// Google's button, so it works in every browser without extra backend code
+// or exposing the client secret in the frontend.
+function renderGoogleButtons() {
+    if (!appConfig.googleOAuthAvailable || !appConfig.googleClientId || typeof google === 'undefined') return;
+
+    [{ btnId: 'googleLoginBtn', mountId: 'googleLoginBtnMount' },
+     { btnId: 'googleRegisterBtn', mountId: 'googleRegisterBtnMount' }].forEach(({ btnId, mountId }) => {
+        const visibleBtn = document.getElementById(btnId);
+        const mount = document.getElementById(mountId);
+        if (!visibleBtn || !mount) return;
+
+        const width = Math.max(120, Math.min(400, Math.round(visibleBtn.getBoundingClientRect().width) || 200));
+        mount.innerHTML = '';
+        google.accounts.id.renderButton(mount, {
+            type: 'standard',
+            theme: 'filled_black',
+            size: 'large',
+            width: width,
+            text: 'continue_with'
+        });
+    });
+}
+
+// Re-render on resize so the invisible overlay stays aligned with the visible button
+let _gBtnResizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(_gBtnResizeTimer);
+    _gBtnResizeTimer = setTimeout(renderGoogleButtons, 250);
+});
+
+function handleGoogleLogin() {
+    if (!appConfig.googleOAuthAvailable || !appConfig.googleClientId) {
+        showToast('error', 'Google Sign-In belum tersedia. Silakan coba lagi nanti.');
+        return;
+    }
+    // The real click is captured by the invisible Google button overlay
+    // (see renderGoogleButtons). This handler is kept only as a safety net
+    // for keyboard/assistive-tech activation in case the overlay hasn't
+    // rendered yet.
+    google.accounts.id.prompt();
+}
+
+// Handle Google credential response
+const GOOGLE_BTN_ICON_SVG = `<svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Google`;
+const GOOGLE_BTN_SPINNER_SVG = `<svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Memproses...`;
+
+function setGoogleButtonsState(processing) {
+    ['googleLoginBtn', 'googleRegisterBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.disabled = processing;
+        btn.innerHTML = processing ? GOOGLE_BTN_SPINNER_SVG : GOOGLE_BTN_ICON_SVG;
+    });
+}
+
+async function handleGoogleCredentialResponse(response) {
+    setGoogleButtonsState(true);
+
+    try {
+        const r = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ credential: response.credential })
+        });
+        const d = await r.json();
+
+        if (d.ok) {
+            showToast('success', `Selamat datang, ${d.user.full_name}!`);
+            setTimeout(() => window.location.href = d.redirect, 800);
+        } else {
+            showToast('error', d.msg || 'Gagal login dengan Google.');
+            setGoogleButtonsState(false);
+        }
+    } catch(err) {
+        showToast('error', 'Gagal terhubung ke server.');
+        setGoogleButtonsState(false);
+    }
+}
+
+// ============ FORGOT PASSWORD ============
+function openForgotPasswordModal() {
+    document.getElementById('forgotPasswordModal').classList.add('show');
+    document.getElementById('forgotStep1').classList.remove('hidden');
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('forgotError').classList.add('hidden');
+    document.getElementById('forgotEmail').focus();
+}
+
+function closeForgotPasswordModal() {
+    document.getElementById('forgotPasswordModal').classList.remove('show');
+}
+
+async function sendForgotPassword() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    const errorEl = document.getElementById('forgotError');
+    const errorMsg = document.getElementById('forgotErrorMsg');
+
+    errorEl.classList.add('hidden');
+
+    if (!email) {
+        errorMsg.textContent = 'Email wajib diisi.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const btn = document.getElementById('forgotSendBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Mengirim...`;
+
+    try {
+        const r = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, method: 'email' })
+        });
+        const d = await r.json();
+
+        if (d.ok) {
+            showToast('success', 'Link reset password telah dikirim ke email Anda.');
+            closeForgotPasswordModal();
+        } else {
+            errorMsg.textContent = d.msg || 'Gagal mengirim link reset.';
+            errorEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="send" class="w-5 h-5"></i> <span>Kirim Link Reset</span>`;
+            lucide.createIcons();
+        }
+    } catch(err) {
+        errorMsg.textContent = 'Gagal terhubung ke server.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="send" class="w-5 h-5"></i> <span>Kirim Link Reset</span>`;
+        lucide.createIcons();
+    }
+}
+
+// Toast notification
+function showToast(type, msg) {
+    const t = document.createElement('div');
+    const colors = {
+        success: 'bg-emerald-600/95',
+        error: 'bg-red-600/95',
+        info: 'bg-blue-600/95'
+    };
+    const icons = {
+        success: 'check-circle',
+        error: 'alert-circle',
+        info: 'info'
+    };
+
+    t.className = `toast text-white ${colors[type]||colors.info} shadow-2xl flex items-center gap-2 backdrop-blur-xl`;
+    t.innerHTML = `<i data-lucide="${icons[type]||icons.info}" class="w-5 h-5 shrink-0"></i>${msg}`;
+    document.body.appendChild(t);
+    lucide.createIcons();
+
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(30px)';
+        t.style.transition = 'all .3s';
+        setTimeout(() => t.remove(), 300);
+    }, 3000);
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-bg').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('show');
+        }
+    });
+});
+
+// NIK counter
+document.getElementById('regNIK').addEventListener('input', function(e) {
+    const count = e.target.value.length;
+    document.getElementById('nikCount').textContent = count + '/16';
+    if (count === 16) {
+        document.getElementById('nikCount').classList.add('text-emerald-400');
+    } else {
+        document.getElementById('nikCount').classList.remove('text-emerald-400');
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Enter to submit forms
+    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+        const form = e.target.closest('form');
+        if (form) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    }
+
+    // Escape to close modals
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-bg.show').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    }
+});
+
+// Initialize app on load
+window.addEventListener('load', initApp);
+</script>
+</body>
+</html>

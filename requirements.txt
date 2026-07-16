@@ -1,0 +1,16 @@
+# LaporPublik - Requirements
+flask==3.0.3
+flask-cors==4.0.1
+werkzeug==3.0.3
+mysql-connector-python==8.4.0
+
+# Required for .env config loading (was missing — GOOGLE_CLIENT_ID etc were never read)
+python-dotenv==1.0.1
+
+# Required for Google OAuth token verification (was missing — google_login() always
+# returned "Google OAuth tidak tersedia di server." because the import failed silently)
+google-auth==2.35.0
+requests==2.32.3
+
+# Optional but recommended for production deployment
+gunicorn==22.0.0

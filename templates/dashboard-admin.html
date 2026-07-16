@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaporPublik | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Leaflet LocateControl -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode:'class',
+            theme:{ extend:{ colors:{ dark:{ bg:'#0b1220', card:'#151d30', border:'#1f2a44' } } } }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
+        * { box-sizing: border-box; }
+        body {
+            font-family:'Plus Jakarta Sans',sans-serif;
+            background: #f1f5f9;
+        }
+        .dark body, body.dark { background: #0b1220; }
+
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+        .dark ::-webkit-scrollbar-thumb { background:#334155; }
+
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; animation:fadeIn .4s cubic-bezier(.16,1,.3,1); }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+        .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(8px); z-index:999; justify-content:center; align-items:center; padding:1rem; }
+        .modal-bg.show { display:flex; }
+
+        .badge { display:inline-flex; align-items:center; gap:4px; padding:.2rem .65rem; border-radius:999px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+        .status-pending { background:#fef9c3; color:#854d0e; }
+        .status-in_review { background:#dbeafe; color:#1e40af; }
+        .status-in_progress { background:#ffedd5; color:#9a3412; }
+        .status-resolved { background:#dcfce7; color:#166534; }
+        .status-rejected { background:#fee2e2; color:#991b1b; }
+        .status-closed { background:#f1f5f9; color:#64748b; }
+        .dark .status-pending { background:#422006; color:#fbbf24; }
+        .dark .status-in_review { background:#1e3a5f; color:#93c5fd; }
+        .dark .status-in_progress { background:#431407; color:#fb923c; }
+        .dark .status-resolved { background:#14532d; color:#86efac; }
+        .dark .status-rejected { background:#450a0a; color:#fca5a5; }
+        .dark .status-closed { background:#1e293b; color:#94a3b8; }
+        .priority-low { background:#f0fdf4; color:#16a34a; }
+        .priority-medium { background:#fff7ed; color:#c2410c; }
+        .priority-high { background:#fef2f2; color:#dc2626; }
+        .priority-critical { background:#450a0a; color:#fca5a5; }
+        .dark .priority-low { background:#14532d; color:#86efac; }
+        .dark .priority-medium { background:#431407; color:#fb923c; }
+        .dark .priority-high { background:#450a0a; color:#fca5a5; }
+
+        .input-cls {
+            border:1.5px solid #e2e8f0; border-radius:.75rem; padding:.7rem 1rem;
+            width:100%; font-size:.875rem; outline:none; transition:all .25s;
+            background:#fff; font-family: inherit;
+        }
+        .input-cls:focus { border-color:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.1); }
+        .dark .input-cls { background:#151d30; border-color:#1f2a44; color:#e2e8f0; }
+        .dark .input-cls:focus { border-color:#3b82f6; }
+        .input-cls::placeholder { color: #94a3b8; }
+
+        .sidebar-item {
+            display:flex; align-items:center; gap:.75rem; padding:.7rem 1rem;
+            border-radius:.75rem; font-size:.875rem; font-weight:500; cursor:pointer;
+            transition:all .25s cubic-bezier(.4,0,.2,1);
+        }
+        .sidebar-item:hover { background:rgba(59,130,246,.08); }
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color:#fff;
+            box-shadow:0 6px 20px rgba(37,99,235,.35);
+        }
+        .dark .sidebar-item { color:#94a3b8; }
+        .dark .sidebar-item:hover { background:rgba(148,163,184,.08); color:#e2e8f0; }
+
+        /* Premium stat cards */
+        .stat-card {
+            border-radius:1.25rem; padding:1.25rem;
+            border:1px solid;
+            position: relative;
+            overflow: hidden;
+            transition: all .3s cubic-bezier(.4,0,.2,1);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--card-accent, #3b82f6), transparent);
+            opacity: 0.7;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+        .dark .stat-card:hover { box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+
+        .light-card { background:#fff; border-color:#f1f5f9; }
+        .dark .light-card { background:#151d30; border-color:#1f2a44; }
+
+        .stat-icon {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .sos-badge { animation:sos-blink 1.2s ease infinite; }
+        @keyframes sos-blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+        .toast {
+            position:fixed; bottom:1.5rem; right:1.5rem;
+            padding:.85rem 1.2rem; border-radius:1rem;
+            font-size:.8125rem; font-weight:600; z-index:9999;
+            animation: slideInRight .4s cubic-bezier(.16,1,.3,1);
+            max-width:340px; display:flex; align-items:center; gap:.6rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+        }
+        @keyframes slideInRight { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+        .notif-dot { width:.5rem; height:.5rem; border-radius:50%; background:#ef4444; display:inline-block; animation:sos-blink 1s ease infinite; }
+
+        .table-row-hover { transition: all .2s; border-left: 3px solid transparent; }
+        .table-row-hover:hover {
+            background:rgba(59,130,246,.04);
+            border-left-color: #3b82f6;
+        }
+        .dark .table-row-hover:hover { background:rgba(59,130,246,.08); }
+
+        /* ===== MAP STYLES ===== */
+        #adminMap {
+            height: 520px;
+            border-radius: 1rem;
+            z-index: 1;
+            background: #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .dark #adminMap { background: #151d30; }
+
+        /* Leaflet popup */
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2) !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            padding: 0 !important;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .dark .leaflet-popup-content-wrapper {
+            background: #151d30 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #1f2a44 !important;
+        }
+        .dark .leaflet-popup-tip { background: #151d30 !important; }
+        .leaflet-popup-content { margin: 0 !important; }
+        .leaflet-popup-tip { box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important; }
+
+        .map-popup {
+            padding: 14px 16px;
+            min-width: 220px;
+        }
+        .map-popup .pop-ticket {
+            font-size: 10px;
+            font-weight: 800;
+            font-family: 'Plus Jakarta Sans', monospace;
+            color: #3b82f6;
+            margin-bottom: 6px;
+            letter-spacing: .05em;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .map-popup .pop-ticket svg { width: 10px; height: 10px; }
+        .map-popup .pop-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .dark .map-popup .pop-title { color: #f1f5f9; }
+        .map-popup .pop-meta {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .map-popup .pop-meta svg { width: 12px; height: 12px; flex-shrink: 0; }
+        .dark .map-popup .pop-meta { color: #94a3b8; }
+        .map-popup .pop-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+        .map-popup .pop-gmaps {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            font-size: 11px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 6px 12px;
+            background: #eff6ff;
+            border-radius: 8px;
+            transition: all .2s;
+        }
+        .dark .map-popup .pop-gmaps { background: #1e3a5f; color: #93c5fd; }
+        .map-popup .pop-gmaps:hover { background: #dbeafe; }
+        .map-popup .pop-gmaps svg { width: 12px; height: 12px; }
+
+        /* Custom marker */
+        .custom-marker {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .custom-marker:hover { transform: scale(1.15); }
+
+        .sos-marker-pulse {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(239,68,68,0.25);
+            position: relative;
+            animation: pulse-ring 1.5s ease infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+            70%  { box-shadow: 0 0 0 16px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+
+        /* Map toolbar */
+        .map-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .map-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: none;
+            outline: none;
+            font-family: inherit;
+        }
+        .map-btn svg { width: 14px; height: 14px; }
+        .map-btn-blue {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+        }
+        .map-btn-blue:hover {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+        }
+        .map-btn-red {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(220,38,38,0.25);
+        }
+        .map-btn-red:hover {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            transform: translateY(-1px);
+        }
+        .map-btn-slate { background: #f1f5f9; color: #475569; }
+        .map-btn-slate:hover { background: #e2e8f0; }
+        .dark .map-btn-slate { background: #1f2a44; color: #94a3b8; }
+        .dark .map-btn-slate:hover { background: #334155; color: #e2e8f0; }
+        .map-btn.active-bm {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+        }
+
+        /* Basemap switcher */
+        .basemap-switcher {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .basemap-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 10px; font-size: 11px;
+            font-weight: 700; cursor: pointer; border: 2px solid #e2e8f0;
+            outline: none; transition: all .25s; font-family: inherit;
+            background: #fff; color: #64748b;
+        }
+        .dark .basemap-btn { background: #151d30; border-color: #1f2a44; color: #94a3b8; }
+        .basemap-btn svg { width: 14px; height: 14px; }
+        .basemap-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+        .basemap-btn.active-bm {
+            border-color: #3b82f6; color: #3b82f6; background: #eff6ff;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.15);
+        }
+        .dark .basemap-btn.active-bm { background: #1e3a5f; color: #93c5fd; }
+
+        /* Map stats bar */
+        .map-stats-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            background: rgba(248,250,252,0.9);
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+        }
+        .dark .map-stats-bar {
+            background: rgba(11,18,32,0.8);
+            border-color: #1f2a44;
+        }
+        .map-legend-item {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; background: #f8fafc; border-radius: 8px;
+            font-size: 11px; font-weight: 600; color: #475569;
+        }
+        .dark .map-legend-item { background: #1f2a44; color: #94a3b8; }
+        .map-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid rgba(255,255,255,0.5);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        /* Leaflet controls */
+        .leaflet-bar a {
+            border-radius: 8px !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+        }
+        .leaflet-bar {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            border: none !important;
+            overflow: hidden;
+        }
+        .dark .leaflet-control-zoom a {
+            background: #151d30 !important;
+            color: #94a3b8 !important;
+            border-color: #1f2a44 !important;
+        }
+        .dark .leaflet-control-zoom a:hover {
+            background: #1f2a44 !important;
+            color: #e2e8f0 !important;
+        }
+        .dark .leaflet-control-attribution {
+            background: rgba(11,18,32,0.8) !important;
+            color: #475569 !important;
+        }
+        .dark .leaflet-control-attribution a { color: #3b82f6 !important; }
+
+        /* Sidebar gradient */
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+        .dark .sidebar-gradient {
+            background: linear-gradient(180deg, #151d30 0%, #0b1220 100%);
+        }
+
+        /* Header glass */
+        .header-glass {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .dark .header-glass {
+            background: rgba(21,29,48,0.85);
+        }
+
+        /* Action button */
+        .action-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 10px; font-size: 12px;
+            font-weight: 700; cursor: pointer; border: none; outline: none;
+            transition: all .25s; font-family: inherit;
+        }
+        .action-btn svg { width: 14px; height: 14px; }
+        .action-btn-primary {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+        }
+        .action-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+        }
+
+        /* SOS Card */
+        .sos-card {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .sos-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* SOS item card */
+        .sos-item-card {
+            background: #fff;
+            border: 1px solid #fecaca;
+            transition: all .3s;
+        }
+        .dark .sos-item-card {
+            background: #151d30;
+            border-color: rgba(239,68,68,0.2);
+        }
+        .sos-item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(239,68,68,0.1);
+        }
+
+        /* Notification item */
+        .notif-item {
+            transition: all .2s;
+            border-left: 3px solid transparent;
+        }
+        .notif-item.unread {
+            background: linear-gradient(90deg, rgba(59,130,246,0.05), transparent);
+            border-left-color: #3b82f6;
+        }
+        .dark .notif-item.unread {
+            background: linear-gradient(90deg, rgba(59,130,246,0.1), transparent);
+        }
+        .notif-item:hover {
+            background: rgba(59,130,246,0.04);
+        }
+
+        /* Modal header */
+        .modal-header-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        }
+
+        /* Checkbox filter */
+        .filter-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 10px; font-size: 11px;
+            font-weight: 700; cursor: pointer; transition: all .2s;
+            border: 1.5px solid #e2e8f0; background: #fff;
+        }
+        .dark .filter-chip { border-color: #1f2a44; background: #151d30; color: #94a3b8; }
+        .filter-chip:hover { border-color: #3b82f6; }
+        .filter-chip input[type="checkbox"] {
+            width: 12px; height: 12px;
+            accent-color: #3b82f6;
+        }
+
+        /* Loading spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-dark-bg text-slate-900 dark:text-slate-100 transition-colors duration-200">
+
+<div class="flex h-screen overflow-hidden">
+
+<!-- ========== SIDEBAR ========== -->
+<aside class="hidden lg:flex w-64 flex-col sidebar-gradient border-r border-slate-200 dark:border-dark-border flex-shrink-0 overflow-y-auto">
+    <div class="p-5 flex items-center gap-3 border-b border-slate-200 dark:border-dark-border">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-base shadow-lg shadow-blue-500/30" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+            <div class="font-extrabold text-base text-slate-900 dark:text-white">LaporPublik</div>
+            <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Admin Panel v2.1</div>
+        </div>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-1">
+        <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-2">Utama</div>
+        <div class="sidebar-item active" id="snav-dashboard" onclick="setPanel('dashboard')">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </div>
+        <div class="sidebar-item" id="snav-reports" onclick="setPanel('reports')">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Manajemen Laporan
+            <span id="pendingBadge" class="ml-auto bg-yellow-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full hidden"></span>
+        </div>
+        <div class="sidebar-item" id="snav-sos" onclick="setPanel('sos')">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i> SOS Darurat
+            <span id="sosBadge" class="ml-auto bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full sos-badge hidden"></span>
+        </div>
+        <div class="sidebar-item" id="snav-maps" onclick="setPanel('maps')">
+            <i data-lucide="map" class="w-4 h-4"></i> Peta Interaktif
+        </div>
+
+        <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-2 mt-3">Pengguna</div>
+        <div class="sidebar-item" id="snav-users" onclick="setPanel('users')">
+            <i data-lucide="users" class="w-4 h-4"></i> Manajemen User
+        </div>
+        <div class="sidebar-item" id="snav-notif" onclick="setPanel('notif')">
+            <i data-lucide="bell" class="w-4 h-4"></i> Notifikasi Admin
+            <span id="adminNotifBadge" class="ml-auto bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full hidden"></span>
+        </div>
+
+        <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 py-2 mt-3">Sistem</div>
+        <div class="sidebar-item" id="snav-settings" onclick="setPanel('settings')">
+            <i data-lucide="settings" class="w-4 h-4"></i> Pengaturan
+        </div>
+    </nav>
+
+    <div class="p-4 border-t border-slate-200 dark:border-dark-border">
+        <div id="adminUserCard" class="flex items-center gap-3 p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors" onclick="setPanel('admin-profile')">
+            <img id="adminAvatar" src="https://api.dicebear.com/7.x/initials/svg?seed=Admin" class="w-9 h-9 rounded-full" alt="">
+            <div class="flex-1 overflow-hidden">
+                <p id="adminName" class="text-sm font-semibold truncate dark:text-white">—</p>
+                <p id="adminRole" class="text-xs text-slate-400 capitalize">—</p>
+            </div>
+            <button onclick="event.stopPropagation();handleLogout()" title="Keluar" class="text-slate-400 hover:text-red-500 transition-colors">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</aside>
+
+<!-- ========== MAIN ========== -->
+<main class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+    <!-- HEADER -->
+    <header class="h-16 header-glass border-b border-slate-200 dark:border-dark-border flex items-center justify-between px-5 lg:px-7 shrink-0 z-30 sticky top-0">
+        <div class="flex items-center gap-4">
+            <button id="mobileMenuBtn" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400" onclick="toggleMobileSidebar()">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div>
+                <h1 id="panelTitle" class="font-extrabold text-base text-slate-900 dark:text-white">Dashboard</h1>
+                <p id="panelSubtitle" class="text-xs text-slate-400 hidden md:block">Ringkasan sistem hari ini</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="relative hidden md:block">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+                <input type="text" id="globalSearch" placeholder="Cari laporan, user..." class="bg-slate-100 dark:bg-slate-800 border-none rounded-xl pl-9 pr-4 py-2 text-sm w-56 focus:ring-2 focus:ring-blue-500 outline-none dark:text-white dark:placeholder:text-slate-500" onkeyup="globalSearchHandler(this.value)">
+            </div>
+            <button onclick="setPanel('notif')" class="relative p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <i data-lucide="bell" class="w-5 h-5 text-slate-600 dark:text-slate-400"></i>
+                <span id="headerNotifBadge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full items-center justify-center shadow-lg shadow-red-500/30"></span>
+            </button>
+            <button id="themeBtn" onclick="toggleTheme()" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">
+                <i data-lucide="moon" id="themeIcon" class="w-5 h-5"></i>
+            </button>
+            <button onclick="refreshAll()" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400" title="Refresh data">
+                <i data-lucide="refresh-cw" id="refreshIcon" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- PANEL CONTENT -->
+    <div class="flex-1 overflow-y-auto p-4 lg:p-6">
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="panel-dashboard" class="tab-panel active">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card light-card" style="--card-accent: #3b82f6;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-blue-50 dark:bg-blue-900/30 text-blue-600">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">Total</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-slate-900 dark:text-white" id="ds-total">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Total Laporan</div>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #eab308;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">Butuh Aksi</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-yellow-600" id="ds-pending">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Menunggu Review</div>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #f97316;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-orange-50 dark:bg-orange-900/30 text-orange-600">
+                            <i data-lucide="loader" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">Proses</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-orange-600" id="ds-inprogress">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Dalam Proses</div>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #10b981;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">Selesai</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-emerald-600" id="ds-resolved">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Diselesaikan</div>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #8b5cf6;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-purple-50 dark:bg-purple-900/30 text-purple-600">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">Pengguna</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-purple-600" id="ds-users">—</div>
+                    <div class="text-xs text-slate-400 mt-1">Total Pengguna</div>
+                </div>
+                <div class="stat-card light-card col-span-1" id="sosStatCard" onclick="setPanel('sos')" style="cursor:pointer; --card-accent: #ef4444;">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="stat-icon bg-red-50 dark:bg-red-900/30 text-red-600">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-xs text-red-400 font-bold sos-badge hidden" id="sosBadgeCard">AKTIF</span>
+                    </div>
+                    <div class="text-2xl font-extrabold text-red-600" id="ds-sos">—</div>
+                    <div class="text-xs text-slate-400 mt-1">SOS Aktif</div>
+                </div>
+                <div class="stat-card light-card col-span-2" style="--card-accent: #10b981;">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Tingkat Penyelesaian
+                    </div>
+                    <div class="text-2xl font-extrabold text-slate-900 dark:text-white" id="ds-rate">—%</div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mt-3 overflow-hidden">
+                        <div id="ds-rate-bar" class="h-2 rounded-full transition-all duration-1000" style="width:0%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-5 mb-6">
+                <div class="lg:col-span-2 stat-card light-card" style="--card-accent: #3b82f6;">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-500"></i>
+                            Laporan per Hari (7 Hari Terakhir)
+                        </h3>
+                    </div>
+                    <canvas id="chartDaily" height="120"></canvas>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #8b5cf6;">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-purple-500"></i>
+                        Distribusi Status
+                    </h3>
+                    <canvas id="chartStatus" height="180"></canvas>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-5">
+                <div class="stat-card light-card" style="--card-accent: #8b5cf6;">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="folder-kanban" class="w-4 h-4 text-purple-500"></i>
+                        Top Kategori Laporan
+                    </h3>
+                    <canvas id="chartCategory" height="180"></canvas>
+                </div>
+                <div class="stat-card light-card" style="--card-accent: #3b82f6;">
+                    <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <i data-lucide="trophy" class="w-4 h-4 text-blue-500"></i>
+                        Pelapor Teraktif
+                    </h3>
+                    <div id="topReportersList" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== LAPORAN ===== -->
+        <div id="panel-reports" class="tab-panel">
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border mb-5 p-4 shadow-sm">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <div class="relative flex-1 min-w-[180px]">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="reportSearch" placeholder="Cari tiket, judul, pelapor..." class="input-cls pl-9" onkeyup="debounce(loadReports,400)()">
+                    </div>
+                    <select id="reportFilterStatus" class="input-cls w-auto" onchange="loadReports()">
+                        <option value="">Semua Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_review">Review</option>
+                        <option value="in_progress">Dalam Proses</option>
+                        <option value="resolved">Selesai</option>
+                        <option value="rejected">Ditolak</option>
+                        <option value="closed">Ditutup</option>
+                    </select>
+                    <select id="reportFilterCategory" class="input-cls w-auto" onchange="loadReports()">
+                        <option value="">Semua Kategori</option>
+                        <option>Infrastruktur</option>
+                        <option>Lingkungan</option>
+                        <option>Keamanan</option>
+                        <option>Kesehatan</option>
+                        <option>Pendidikan</option>
+                        <option>Transportasi</option>
+                        <option>Layanan Publik</option>
+                        <option>Korupsi</option>
+                        <option>Bencana</option>
+                        <option>Lainnya</option>
+                    </select>
+                    <select id="reportFilterPriority" class="input-cls w-auto" onchange="loadReports()">
+                        <option value="">Semua Prioritas</option>
+                        <option value="low">Rendah</option>
+                        <option value="medium">Sedang</option>
+                        <option value="high">Tinggi</option>
+                        <option value="critical">Kritis</option>
+                    </select>
+                    <select id="reportSort" class="input-cls w-auto" onchange="loadReports()">
+                        <option value="created_at">Terbaru</option>
+                        <option value="updated_at">Diperbarui</option>
+                        <option value="priority">Prioritas</option>
+                    </select>
+                    <button onclick="loadReports()" class="action-btn action-btn-primary">
+                        <i data-lucide="filter" class="w-4 h-4"></i> Filter
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-slate-800/50">
+                                <th class="text-left px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Tiket</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Judul / Pelapor</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:table-cell">Kategori</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Status</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Prioritas</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Tanggal</th>
+                                <th class="text-right px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody" class="divide-y divide-slate-100 dark:divide-dark-border">
+                            <tr><td colspan="7" class="text-center py-10 text-slate-400">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="reportsPagination" class="px-5 py-4 border-t border-slate-200 dark:border-dark-border flex items-center justify-between flex-wrap gap-3">
+                    <span id="reportsPaginationInfo" class="text-xs text-slate-400"></span>
+                    <div id="reportsPaginationBtns" class="flex gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SOS ===== -->
+        <div id="panel-sos" class="tab-panel">
+            <div class="sos-card rounded-2xl p-5 mb-5 text-white flex items-center justify-between relative">
+                <div class="flex items-center gap-3 relative z-10">
+                    <div class="w-12 h-12 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center sos-badge border border-white/20">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="font-extrabold text-lg">Monitor SOS Darurat</div>
+                        <div class="text-red-100 text-sm">Sinyal darurat real-time dari pengguna</div>
+                    </div>
+                </div>
+                <button onclick="loadSOS()" class="bg-white/15 backdrop-blur-sm hover:bg-white/25 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-white/20 relative z-10">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh
+                </button>
+            </div>
+            <div id="sosList" class="grid md:grid-cols-2 gap-4">
+                <div class="col-span-2 text-center py-10 text-slate-400">Memuat data SOS...</div>
+            </div>
+        </div>
+
+        <!-- ===== PETA — UPGRADED ===== -->
+        <div id="panel-maps" class="tab-panel">
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border overflow-hidden shadow-sm">
+
+                <!-- Header & Toolbar -->
+                <div class="p-5 border-b border-slate-200 dark:border-dark-border">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-5 h-5 text-blue-600"></i>
+                                Peta Persebaran Laporan
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">OpenStreetMap + Satellite Imagery — real-time, akurat</p>
+                        </div>
+                        <div class="map-toolbar">
+                            <button onclick="mapLoadReports()" class="map-btn map-btn-blue">
+                                <i data-lucide="map-pin" class="w-4 h-4"></i> Muat Laporan
+                            </button>
+                            <button onclick="mapLoadSOS()" class="map-btn map-btn-red">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i> Muat SOS
+                            </button>
+                            <button onclick="mapClearLayers()" class="map-btn map-btn-slate">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Bersihkan
+                            </button>
+                            <button onclick="mapFitBounds()" class="map-btn map-btn-slate">
+                                <i data-lucide="maximize-2" class="w-4 h-4"></i> Fit
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter status untuk peta -->
+                    <div class="flex flex-wrap gap-2 mt-4 items-center" id="mapStatusFilter">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter:
+                        </span>
+                        <label class="filter-chip">
+                            <input type="checkbox" value="pending" checked onchange="mapFilterChange()"> Pending
+                        </label>
+                        <label class="filter-chip">
+                            <input type="checkbox" value="in_review" checked onchange="mapFilterChange()"> Review
+                        </label>
+                        <label class="filter-chip">
+                            <input type="checkbox" value="in_progress" checked onchange="mapFilterChange()"> Proses
+                        </label>
+                        <label class="filter-chip">
+                            <input type="checkbox" value="resolved" checked onchange="mapFilterChange()"> Selesai
+                        </label>
+                        <label class="filter-chip">
+                            <input type="checkbox" value="rejected" checked onchange="mapFilterChange()"> Ditolak
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Basemap switcher -->
+                <div class="px-5 py-3 border-b border-slate-200 dark:border-dark-border flex items-center gap-2 flex-wrap">
+                    <span class="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="layers" class="w-3.5 h-3.5"></i> Peta Dasar:
+                    </span>
+                    <div class="basemap-switcher">
+                        <button onclick="switchBasemap('osm')" id="bm-osm" class="basemap-btn active-bm">
+                            <i data-lucide="map" class="w-3.5 h-3.5"></i> Standar
+                        </button>
+                        <button onclick="switchBasemap('satellite')" id="bm-satellite" class="basemap-btn">
+                            <i data-lucide="satellite" class="w-3.5 h-3.5"></i> Satelit
+                        </button>
+                        <button onclick="switchBasemap('hybrid')" id="bm-hybrid" class="basemap-btn">
+                            <i data-lucide="layers" class="w-3.5 h-3.5"></i> Hybrid
+                        </button>
+                        <button onclick="switchBasemap('topo')" id="bm-topo" class="basemap-btn">
+                            <i data-lucide="mountain" class="w-3.5 h-3.5"></i> Topografi
+                        </button>
+                        <button onclick="switchBasemap('dark')" id="bm-dark" class="basemap-btn">
+                            <i data-lucide="moon" class="w-3.5 h-3.5"></i> Gelap
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Map container -->
+                <div class="p-4 pb-0">
+                    <div id="adminMap"></div>
+                </div>
+
+                <!-- Stats bar & Legend -->
+                <div class="map-stats-bar">
+                    <div id="mapStatsTotal" class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                        <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                        <span id="mapCountLabel">Klik "Muat Laporan" untuk menampilkan titik-titik laporan di peta</span>
+                    </div>
+                    <div class="flex-1"></div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="map-legend-item"><span class="map-legend-dot" style="background:#eab308"></span>Pending</span>
+                        <span class="map-legend-item"><span class="map-legend-dot" style="background:#3b82f6"></span>Review</span>
+                        <span class="map-legend-item"><span class="map-legend-dot" style="background:#f97316"></span>Proses</span>
+                        <span class="map-legend-item"><span class="map-legend-dot" style="background:#10b981"></span>Selesai</span>
+                        <span class="map-legend-item"><span class="map-legend-dot" style="background:#ef4444"></span>Ditolak/SOS</span>
+                    </div>
+                </div>
+
+                <!-- Info geocode -->
+                <div class="px-5 pb-4 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 text-blue-500"></i>
+                    Peta menggunakan <strong>OpenStreetMap</strong> + <strong>Esri Satellite</strong> — tidak memerlukan API key. Data koordinat berasal langsung dari database laporan.
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== USERS ===== -->
+        <div id="panel-users" class="tab-panel">
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border mb-5 p-4 shadow-sm">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <div class="relative flex-1 min-w-[200px]">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="userSearch" placeholder="Cari nama, email, nomor HP..." class="input-cls pl-9" onkeyup="debounce(loadUsers,400)()">
+                    </div>
+                    <button onclick="loadUsers()" class="action-btn action-btn-primary">
+                        <i data-lucide="search" class="w-4 h-4"></i> Cari
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-slate-800/50">
+                                <th class="text-left px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Pengguna</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:table-cell">Kontak</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:table-cell">NIK</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Laporan</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider hidden xl:table-cell">Bergabung</th>
+                                <th class="text-left px-4 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                                <th class="text-right px-5 py-3.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-slate-100 dark:divide-dark-border">
+                            <tr><td colspan="7" class="text-center py-10 text-slate-400">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="usersPagination" class="px-5 py-4 border-t border-slate-200 dark:border-dark-border flex items-center justify-between flex-wrap gap-3">
+                    <span id="usersPaginationInfo" class="text-xs text-slate-400"></span>
+                    <div id="usersPaginationBtns" class="flex gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== NOTIF ADMIN ===== -->
+        <div id="panel-notif" class="tab-panel">
+            <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border overflow-hidden shadow-sm">
+                <div class="px-5 py-4 border-b border-slate-200 dark:border-dark-border flex items-center justify-between">
+                    <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i data-lucide="bell" class="w-5 h-5 text-blue-600"></i> Notifikasi Sistem
+                    </h2>
+                    <button onclick="readAllAdminNotif()" class="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
+                        <i data-lucide="check-check" class="w-3.5 h-3.5"></i> Tandai Semua Dibaca
+                    </button>
+                </div>
+                <div id="adminNotifList" class="divide-y divide-slate-100 dark:divide-dark-border min-h-[200px]">
+                    <div class="px-5 py-10 text-center text-slate-400">Memuat notifikasi...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SETTINGS ===== -->
+        <div id="panel-settings" class="tab-panel">
+            <div class="max-w-2xl space-y-5">
+                <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                            <i data-lucide="settings" class="w-4 h-4 text-blue-600"></i>
+                        </div>
+                        Pengaturan Sistem
+                    </h3>
+                    <form onsubmit="saveSettings(event)" class="space-y-4" id="settingsForm">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Aplikasi</label>
+                            <input type="text" name="app_name" class="input-cls" placeholder="LaporPublik">
+                        </div>
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 flex items-start gap-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i>
+                            <div>
+                                <div class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Peta menggunakan OpenStreetMap (Gratis)</div>
+                                <p class="text-xs text-emerald-600 dark:text-emerald-500 mt-1">Fitur peta sudah berfungsi penuh menggunakan Leaflet.js + OpenStreetMap + Esri Satellite. Tidak diperlukan API Key Google Maps.</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-200 dark:border-dark-border pt-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email SOS Darurat</label>
+                                <input type="email" name="sos_email" class="input-cls" placeholder="sos@lapor.id">
+                            </div>
+                        </div>
+                        <button type="submit" class="action-btn action-btn-primary">
+                            <i data-lucide="save" class="w-4 h-4"></i> Simpan Pengaturan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ADMIN PROFILE ===== -->
+        <div id="panel-admin-profile" class="tab-panel">
+            <div class="max-w-xl space-y-5">
+                <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                            <i data-lucide="user-circle" class="w-4 h-4 text-blue-600"></i>
+                        </div>
+                        Profil Admin
+                    </h3>
+                    <div id="adminProfileContent" class="text-slate-400 text-sm">Memuat...</div>
+                </div>
+                <div class="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <i data-lucide="key" class="w-4 h-4 text-slate-600 dark:text-slate-400"></i>
+                        </div>
+                        Ubah Password
+                    </h3>
+                    <form onsubmit="adminChangePassword(event)" class="space-y-4">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password Lama</label><input type="password" id="adminOldPw" class="input-cls" required></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password Baru</label><input type="password" id="adminNewPw" class="input-cls" required minlength="8"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Konfirmasi</label><input type="password" id="adminConfirmPw" class="input-cls" required></div>
+                        <button type="submit" class="action-btn action-btn-primary">
+                            <i data-lucide="save" class="w-4 h-4"></i> Simpan Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+</div>
+
+<!-- Mobile sidebar overlay -->
+<div id="mobileSidebarOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onclick="toggleMobileSidebar()"></div>
+<div id="mobileSidebar" class="hidden fixed inset-y-0 left-0 w-64 bg-white dark:bg-dark-card z-50 lg:hidden overflow-y-auto shadow-2xl">
+    <div class="p-5 flex items-center gap-3 border-b border-slate-200 dark:border-dark-border">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div class="font-extrabold text-blue-600">LaporPublik Admin</div>
+    </div>
+    <nav class="px-4 py-3 space-y-1">
+        <div class="sidebar-item active" onclick="setPanel('dashboard');toggleMobileSidebar()"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</div>
+        <div class="sidebar-item" onclick="setPanel('reports');toggleMobileSidebar()"><i data-lucide="file-text" class="w-4 h-4"></i> Laporan</div>
+        <div class="sidebar-item" onclick="setPanel('sos');toggleMobileSidebar()"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i> SOS Darurat</div>
+        <div class="sidebar-item" onclick="setPanel('maps');toggleMobileSidebar()"><i data-lucide="map" class="w-4 h-4"></i> Peta</div>
+        <div class="sidebar-item" onclick="setPanel('users');toggleMobileSidebar()"><i data-lucide="users" class="w-4 h-4"></i> Pengguna</div>
+        <div class="sidebar-item" onclick="setPanel('notif');toggleMobileSidebar()"><i data-lucide="bell" class="w-4 h-4"></i> Notifikasi</div>
+        <div class="sidebar-item" onclick="setPanel('settings');toggleMobileSidebar()"><i data-lucide="settings" class="w-4 h-4"></i> Pengaturan</div>
+        <div class="sidebar-item text-red-500" onclick="handleLogout()"><i data-lucide="log-out" class="w-4 h-4"></i> Keluar</div>
+    </nav>
+</div>
+
+<!-- REPORT DETAIL MODAL -->
+<div id="reportModal" class="modal-bg">
+    <div id="reportModalContent" class="bg-white dark:bg-dark-card rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div class="p-6 text-center text-slate-400">Memuat...</div>
+    </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div id="userModal" class="modal-bg">
+    <div id="userModalContent" class="bg-white dark:bg-dark-card rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div class="p-6 text-center text-slate-400">Memuat...</div>
+    </div>
+</div>
+
+<!-- STATUS UPDATE MODAL -->
+<div id="statusModal" class="modal-bg">
+    <div class="bg-white dark:bg-dark-card rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                <i data-lucide="edit" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="font-extrabold text-xl text-slate-900 dark:text-white">Update Status</h3>
+                <p id="statusModalTicket" class="text-xs text-slate-400 font-mono"></p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <i data-lucide="flag" class="w-3.5 h-3.5"></i> Status Baru
+                </label>
+                <select id="newStatus" class="input-cls">
+                    <option value="in_review">Sedang Direview</option>
+                    <option value="in_progress">Dalam Penanganan</option>
+                    <option value="resolved">Selesai / Diselesaikan</option>
+                    <option value="rejected">Ditolak</option>
+                    <option value="closed">Ditutup</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Catatan Admin (opsional)
+                </label>
+                <textarea id="adminNote" class="input-cls" rows="3" placeholder="Berikan informasi tambahan kepada pelapor..."></textarea>
+            </div>
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-xs text-blue-600 dark:text-blue-400 flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                <span>Pelapor akan menerima notifikasi otomatis di dashboard mereka.</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('statusModal').classList.remove('show')" class="flex-1 border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Batal</button>
+                <button id="statusConfirmBtn" onclick="confirmStatusUpdate()" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-2.5 rounded-xl font-bold text-sm hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25">Perbarui Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+let adminData = null;
+let currentReportPage = 1;
+let currentUserPage = 1;
+let currentStatusReportId = null;
+let chartInstances = {};
+
+// ========================
+// ===  LEAFLET MAP ENGINE ===
+// ========================
+let adminMap = null;
+let markerClusterGroup = null;
+let allMapMarkers = [];
+let currentBasemap = 'osm';
+let basemapLayers = [];
+let pubLabelLayer = null;
+let pubRoadLayer = null;
+
+// Tile layers
+const TILE_LAYERS = {
+    osm: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    },
+    satellite: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19
+    },
+    hybrid_labels: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri',
+        maxZoom: 19
+    },
+    hybrid_roads: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri',
+        maxZoom: 19
+    },
+    topo: {
+        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OpenStreetMap, SRTM | &copy; OpenTopoMap',
+        maxZoom: 17
+    },
+    dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 20
+    }
+};
+
+const STATUS_COLOR = {
+    pending:     '#eab308',
+    in_review:   '#3b82f6',
+    in_progress: '#f97316',
+    resolved:    '#10b981',
+    rejected:    '#ef4444',
+    closed:      '#6b7280'
+};
+
+const STATUS_LABEL = {
+    pending: 'Pending', in_review: 'Review', in_progress: 'Proses',
+    resolved: 'Selesai', rejected: 'Ditolak', closed: 'Ditutup'
+};
+
+// ─── INIT MAP ───
+function initLeafletMap() {
+    if (adminMap) return;
+
+    const el = document.getElementById('adminMap');
+    el.style.background = '';
+
+    adminMap = L.map('adminMap', {
+        center: [-2.5489, 118.0149],
+        zoom: 5,
+        zoomControl: true,
+        attributionControl: true
+    });
+
+    const tl = TILE_LAYERS.osm;
+    const baseLayer = L.tileLayer(tl.url, { attribution: tl.attribution, maxZoom: tl.maxZoom });
+    baseLayer.addTo(adminMap);
+    basemapLayers = [baseLayer];
+
+    markerClusterGroup = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 16,
+        iconCreateFunction: function(cluster) {
+            const count = cluster.getChildCount();
+            let size = 38;
+            let fontSize = 13;
+            if (count > 100) { size = 48; fontSize = 14; }
+            else if (count > 50) { size = 44; fontSize = 13; }
+            return L.divIcon({
+                html: `<div style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fontSize}px;border:3px solid #fff;box-shadow:0 4px 15px rgba(37,99,235,0.4)">${count}</div>`,
+                className: '',
+                iconSize: [size, size]
+            });
+        }
+    });
+    adminMap.addLayer(markerClusterGroup);
+
+    // Scale control
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(adminMap);
+}
+
+// ─── SWITCH BASEMAP ───
+function switchBasemap(name) {
+    if (!adminMap) initLeafletMap();
+    if (currentBasemap === name) return;
+
+    // [VALIDASI DIUBAH] Jika bukan 'hybrid', pastikan nama layer ada di TILE_LAYERS
+    if (name !== 'hybrid' && (!TILE_LAYERS || !TILE_LAYERS[name])) {
+        console.error(`[Basemap Error] Layer dengan nama "${name}" tidak ditemukan di TILE_LAYERS.`);
+        console.log("Daftar layer yang tersedia:", Object.keys(TILE_LAYERS || {}));
+        return;
+    }
+
+    currentBasemap = name;
+
+    // Update UI tombol active
+    document.querySelectorAll('.basemap-btn').forEach(btn => btn.classList.remove('active-bm'));
+    const activeBtn = document.getElementById('bm-' + name);
+    if (activeBtn) activeBtn.classList.add('active-bm');
+
+    // Remove all current basemap layers
+    if (Array.isArray(basemapLayers)) {
+        basemapLayers.forEach(layer => {
+            if (layer && adminMap.hasLayer(layer)) {
+                adminMap.removeLayer(layer);
+            }
+        });
+    }
+    basemapLayers = [];
+
+    // Remove overlays jika ada
+    if (pubLabelLayer) { if (adminMap.hasLayer(pubLabelLayer)) adminMap.removeLayer(pubLabelLayer); pubLabelLayer = null; }
+    if (pubRoadLayer) { if (adminMap.hasLayer(pubRoadLayer)) adminMap.removeLayer(pubRoadLayer); pubRoadLayer = null; }
+
+    // Jalankan logika penambahan layer
+    if (name === 'hybrid') {
+        // Memastikan komponen pembentuk hybrid ada di TILE_LAYERS
+        if (!TILE_LAYERS.satellite || !TILE_LAYERS.hybrid_labels || !TILE_LAYERS.hybrid_roads) {
+            console.error("[Basemap Error] Komponen (satellite/labels/roads) untuk layer 'hybrid' tidak lengkap.");
+            return;
+        }
+
+        // 1. Tambahkan Satellite sebagai Base Layer
+        const satTl = TILE_LAYERS.satellite;
+        const satLayer = L.tileLayer(satTl.url, { attribution: satTl.attribution, maxZoom: satTl.maxZoom });
+        satLayer.addTo(adminMap);
+        basemapLayers.push(satLayer);
+        satLayer.bringToBack();
+
+        // 2. Tambahkan Labels Overlay
+        const labelTl = TILE_LAYERS.hybrid_labels;
+        pubLabelLayer = L.tileLayer(labelTl.url, {
+            attribution: labelTl.attribution,
+            maxZoom: labelTl.maxZoom,
+            opacity: 0.95
+        }).addTo(adminMap);
+
+        // 3. Tambahkan Roads Overlay
+        const roadTl = TILE_LAYERS.hybrid_roads;
+        pubRoadLayer = L.tileLayer(roadTl.url, {
+            attribution: roadTl.attribution,
+            maxZoom: roadTl.maxZoom,
+            opacity: 0.85
+        }).addTo(adminMap);
+
+    } else {
+        // Untuk basemap standar (osm, satellite, topo, dark)
+        const tl = TILE_LAYERS[name];
+        const baseLayer = L.tileLayer(tl.url, { attribution: tl.attribution, maxZoom: tl.maxZoom });
+        baseLayer.addTo(adminMap);
+        basemapLayers.push(baseLayer);
+    }
+
+    // Ensure markers stay on top
+    if (markerClusterGroup && typeof markerClusterGroup.bringToFront === 'function') {
+        markerClusterGroup.bringToFront();
+    }
+}
+
+// ─── CUSTOM ICON MARKER ───
+function createCustomIcon(color, label = '') {
+    return L.divIcon({
+        html: `<div style="position:relative;">
+                   <div style="background:${color};width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+                       <svg style="transform:rotate(45deg);" width="10" height="10" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="4"/></svg>
+                   </div>
+               </div>`,
+        className: '',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
+    });
+}
+
+function createSOSIcon() {
+    return L.divIcon({
+        html: `<div class="sos-marker-pulse">
+                   <div style="background:#ef4444;width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 3px 12px rgba(239,68,68,0.5);display:flex;align-items:center;justify-content:center;">
+                       <svg style="transform:rotate(45deg);" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                           <line x1="12" y1="9" x2="12" y2="13"/>
+                           <line x1="12" y1="17" x2="12.01" y2="17"/>
+                       </svg>
+                   </div>
+               </div>`,
+        className: '',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36]
+    });
+}
+
+// ─── MUAT LAPORAN KE PETA ───
+async function mapLoadReports() {
+    if (!adminMap) initLeafletMap();
+
+    markerClusterGroup.clearLayers();
+    allMapMarkers = [];
+
+    document.getElementById('mapCountLabel').textContent = 'Memuat data laporan...';
+
+    try {
+        const r = await fetch('/api/admin/maps/reports', { credentials: 'include' });
+        const d = await r.json();
+        if (!d.ok) { showToast('error', 'Gagal memuat data peta.'); return; }
+
+        const markers = d.markers || [];
+        const activeFilters = getActiveMapFilters();
+
+        markers.forEach(rep => {
+            if (!rep.latitude || !rep.longitude) return;
+            const lat = parseFloat(rep.latitude);
+            const lng = parseFloat(rep.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            const color = STATUS_COLOR[rep.status] || '#6b7280';
+            const icon = createCustomIcon(color, '');
+
+            const marker = L.marker([lat, lng], { icon });
+
+            const popupHtml = `
+            <div class="map-popup">
+                <div class="pop-ticket">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    ${rep.ticket_id || ''}
+                </div>
+                <div class="pop-title">${rep.title}</div>
+                <div class="pop-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    ${rep.category}
+                </div>
+                <div class="pop-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ${rep.full_name}
+                </div>
+                <div class="pop-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    ${rep.location_name || (rep.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`)}
+                </div>
+                <div>
+                    <span class="pop-badge" style="background:${color}22;color:${color}">${STATUS_LABEL[rep.status] || rep.status}</span>
+                </div>
+                <a class="pop-gmaps" href="https://maps.google.com/?q=${lat},${lng}" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Buka di Google Maps
+                </a>
+            </div>`;
+
+            marker.bindPopup(popupHtml, { maxWidth: 260 });
+
+            marker._statusKey = rep.status;
+            marker._reportData = rep;
+
+            allMapMarkers.push(marker);
+
+            if (activeFilters.includes(rep.status)) {
+                markerClusterGroup.addLayer(marker);
+            }
+        });
+
+        if (markerClusterGroup.getLayers().length > 0) {
+            adminMap.fitBounds(markerClusterGroup.getBounds().pad(0.1));
+        }
+
+        const visible = markerClusterGroup.getLayers().length;
+        document.getElementById('mapCountLabel').textContent =
+            `${markers.length} laporan dimuat · ${visible} terlihat`;
+
+        showToast('success', `${markers.length} titik laporan berhasil dimuat.`);
+    } catch(e) {
+        showToast('error', 'Error: ' + e.message);
+        document.getElementById('mapCountLabel').textContent = 'Gagal memuat data.';
+    }
+}
+
+// ─── MUAT SOS KE PETA ───
+async function mapLoadSOS() {
+    if (!adminMap) initLeafletMap();
+
+    try {
+        const r = await fetch('/api/admin/maps/sos', { credentials: 'include' });
+        const d = await r.json();
+        if (!d.ok) { showToast('error', 'Gagal memuat data SOS.'); return; }
+
+        const markers = d.markers || [];
+        let added = 0;
+
+        markers.forEach(s => {
+            if (!s.latitude || !s.longitude) return;
+            const lat = parseFloat(s.latitude);
+            const lng = parseFloat(s.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            const isActive = s.status === 'active';
+            const icon = isActive ? createSOSIcon() : createCustomIcon('#6b7280', '!');
+
+            const marker = L.marker([lat, lng], { icon });
+
+            const popupHtml = `
+            <div class="map-popup">
+                <div class="pop-ticket" style="color:#ef4444">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    SOS ${isActive ? 'AKTIF' : 'Selesai'}
+                </div>
+                <div class="pop-title">${s.full_name}</div>
+                <div class="pop-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    ${s.phone || '—'}
+                </div>
+                ${s.message ? `<div class="pop-meta" style="font-style:italic">"${s.message}"</div>` : ''}
+                <div class="pop-meta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${new Date(s.created_at).toLocaleString('id-ID')}
+                </div>
+                <a class="pop-gmaps" href="https://maps.google.com/?q=${lat},${lng}" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    Buka Rute Google Maps
+                </a>
+            </div>`;
+
+            marker.bindPopup(popupHtml, { maxWidth: 260 });
+
+            marker.addTo(adminMap);
+            added++;
+        });
+
+        showToast('success', `${added} titik SOS berhasil dimuat.`);
+        document.getElementById('mapCountLabel').textContent =
+            (document.getElementById('mapCountLabel').textContent || '') + ` · ${added} SOS`;
+    } catch(e) {
+        showToast('error', 'Error: ' + e.message);
+    }
+}
+
+// ─── HAPUS SEMUA LAYER ───
+function mapClearLayers() {
+    if (!adminMap) return;
+    markerClusterGroup.clearLayers();
+    adminMap.eachLayer(layer => {
+        if (layer instanceof L.Marker) adminMap.removeLayer(layer);
+    });
+    allMapMarkers = [];
+    document.getElementById('mapCountLabel').textContent = 'Semua marker dibersihkan.';
+    showToast('info', 'Marker peta dibersihkan.');
+}
+
+// ─── FIT BOUNDS ───
+function mapFitBounds() {
+    if (!adminMap) return;
+    if (markerClusterGroup && markerClusterGroup.getLayers().length > 0) {
+        adminMap.fitBounds(markerClusterGroup.getBounds().pad(0.1));
+    } else {
+        adminMap.setView([-2.5489, 118.0149], 5);
+    }
+}
+
+// ─── FILTER CHECKBOX ───
+function getActiveMapFilters() {
+    return Array.from(document.querySelectorAll('#mapStatusFilter input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+}
+
+function mapFilterChange() {
+    if (!adminMap || allMapMarkers.length === 0) return;
+    const activeFilters = getActiveMapFilters();
+    markerClusterGroup.clearLayers();
+    let visible = 0;
+    allMapMarkers.forEach(marker => {
+        if (activeFilters.includes(marker._statusKey)) {
+            markerClusterGroup.addLayer(marker);
+            visible++;
+        }
+    });
+    document.getElementById('mapCountLabel').textContent =
+        `${allMapMarkers.length} laporan · ${visible} terlihat setelah filter`;
+}
+
+// ─── INIT MAP SAAT PANEL DIBUKA ───
+function ensureMapInit() {
+    setTimeout(() => {
+        initLeafletMap();
+        if (adminMap) adminMap.invalidateSize();
+    }, 300);
+}
+
+// ========================
+// ===  INIT APP ===
+// ========================
+async function init() {
+    try {
+        const r = await fetch('/api/auth/me', { credentials:'include' });
+        const d = await r.json();
+        if (!d.ok || !['admin','superadmin'].includes(d.user.role)) {
+            window.location.href = '/login'; return;
+        }
+        adminData = d.user;
+        document.getElementById('adminName').textContent = d.user.full_name;
+        document.getElementById('adminRole').textContent = d.user.role;
+        if (d.user.avatar_url) document.getElementById('adminAvatar').src = d.user.avatar_url;
+        fillAdminProfile(d.user);
+        loadDashboard();
+        loadAdminNotifications();
+        setInterval(() => {
+            loadAdminNotifications();
+            if (document.getElementById('panel-sos').classList.contains('active')) loadSOS();
+        }, 60000);
+    } catch(e) { window.location.href = '/login'; }
+}
+
+// ─── PANELS ───
+function setPanel(panel) {
+    document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+    document.getElementById('panel-'+panel)?.classList.add('active');
+    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('snav-'+panel)?.classList.add('active');
+
+    const titles = { dashboard:'Dashboard', reports:'Manajemen Laporan', sos:'SOS Darurat', maps:'Peta Interaktif', users:'Manajemen Pengguna', notif:'Notifikasi Admin', settings:'Pengaturan Sistem', 'admin-profile':'Profil Admin' };
+    const subs   = { dashboard:'Ringkasan sistem hari ini', reports:'Kelola semua laporan masuk', sos:'Monitor sinyal darurat', maps:'Persebaran geografis laporan (OpenStreetMap + Satellite)', users:'Kelola akun pengguna', notif:'Pemberitahuan sistem', settings:'Konfigurasi aplikasi', 'admin-profile':'Informasi akun admin' };
+    document.getElementById('panelTitle').textContent    = titles[panel] || panel;
+    document.getElementById('panelSubtitle').textContent = subs[panel]  || '';
+
+    if (panel === 'reports') loadReports();
+    if (panel === 'users')   loadUsers();
+    if (panel === 'sos')     loadSOS();
+    if (panel === 'notif')   loadAdminNotifications();
+    if (panel === 'settings') loadSettings();
+    if (panel === 'maps')    ensureMapInit();
+}
+
+function toggleMobileSidebar() {
+    document.getElementById('mobileSidebar').classList.toggle('hidden');
+    document.getElementById('mobileSidebarOverlay').classList.toggle('hidden');
+}
+
+// ─── DASHBOARD ───
+async function loadDashboard() {
+    const r = await fetch('/api/admin/stats', { credentials:'include' });
+    const d = await r.json();
+    if (!d.ok) return;
+    const { stats, daily, by_category, by_status, top_reporters } = d;
+
+    document.getElementById('ds-total').textContent      = stats.total.toLocaleString();
+    document.getElementById('ds-pending').textContent    = stats.pending.toLocaleString();
+    document.getElementById('ds-inprogress').textContent = stats.in_progress.toLocaleString();
+    document.getElementById('ds-resolved').textContent   = stats.resolved.toLocaleString();
+    document.getElementById('ds-users').textContent      = stats.total_users.toLocaleString();
+    document.getElementById('ds-sos').textContent        = stats.sos_active.toLocaleString();
+
+    const rate = stats.total > 0 ? Math.round(stats.resolved / stats.total * 100) : 0;
+    document.getElementById('ds-rate').textContent = rate + '%';
+    setTimeout(() => document.getElementById('ds-rate-bar').style.width = rate + '%', 100);
+
+    const pendingBadge = document.getElementById('pendingBadge');
+    if (stats.pending > 0) { pendingBadge.textContent = stats.pending; pendingBadge.classList.remove('hidden'); }
+    const sosBadge = document.getElementById('sosBadge');
+    if (stats.sos_active > 0) { sosBadge.textContent = stats.sos_active; sosBadge.classList.remove('hidden'); document.getElementById('sosBadgeCard').classList.remove('hidden'); }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? '#1f2a44' : '#f1f5f9';
+
+    if (chartInstances.daily) chartInstances.daily.destroy();
+    chartInstances.daily = new Chart(document.getElementById('chartDaily'), {
+        type: 'bar',
+        data: {
+            labels: daily.map(d => new Date(d.day).toLocaleDateString('id-ID',{weekday:'short',day:'numeric'})),
+            datasets: [{
+                label:'Laporan',
+                data: daily.map(d => d.count),
+                backgroundColor: isDark ? 'rgba(59,130,246,0.8)' : 'rgba(59,130,246,0.7)',
+                borderRadius:8,
+                borderSkipped:false,
+                barThickness: 24
+            }]
+        },
+        options: { responsive:true, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:textColor},grid:{color:gridColor}}, y:{ticks:{color:textColor},grid:{color:gridColor},beginAtZero:true} } }
+    });
+
+    const statusMap = { pending:'#eab308', in_review:'#3b82f6', in_progress:'#f97316', resolved:'#10b981', rejected:'#ef4444', closed:'#6b7280' };
+    if (chartInstances.status) chartInstances.status.destroy();
+    chartInstances.status = new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: by_status.map(s => s.status),
+            datasets: [{ data: by_status.map(s => s.count), backgroundColor: by_status.map(s => statusMap[s.status]||'#94a3b8'), borderWidth:3, borderColor: isDark ? '#151d30' : '#fff', hoverOffset: 8 }]
+        },
+        options: { responsive:true, cutout: '65%', plugins:{ legend:{ position:'bottom', labels:{ color:textColor, font:{size:11, weight:'600'}, padding: 12, usePointStyle: true, pointStyle: 'circle' } } } }
+    });
+
+    if (chartInstances.category) chartInstances.category.destroy();
+    chartInstances.category = new Chart(document.getElementById('chartCategory'), {
+        type: 'bar',
+        data: {
+            labels: by_category.map(c => c.category),
+            datasets: [{ label:'Laporan', data: by_category.map(c => c.count), backgroundColor: isDark ? 'rgba(139,92,246,0.8)' : 'rgba(139,92,246,0.7)', borderRadius:6, borderSkipped:false }]
+        },
+        options: { indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:textColor},grid:{color:gridColor}}, y:{ticks:{color:textColor, font:{weight:'600'}},grid:{display:false}} } }
+    });
+
+    const el = document.getElementById('topReportersList');
+    el.innerHTML = top_reporters.map((u,i) => `
+    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black ${i===0?'bg-yellow-100 text-yellow-700':i===1?'bg-slate-200 text-slate-700':i===2?'bg-orange-100 text-orange-700':'bg-blue-100 dark:bg-blue-900/30 text-blue-600'}">${i+1}</div>
+        <img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.full_name)}" class="w-9 h-9 rounded-lg" alt="">
+        <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">${u.full_name}</div>
+            <div class="text-xs text-slate-400 truncate">${u.email}</div>
+        </div>
+        <div class="text-sm font-bold text-blue-600 flex items-center gap-1">
+            <i data-lucide="file-text" class="w-3 h-3"></i>${u.report_count}
+        </div>
+    </div>`).join('');
+    lucide.createIcons();
+}
+
+// ─── REPORTS ───
+async function loadReports() {
+    const search   = document.getElementById('reportSearch').value;
+    const status   = document.getElementById('reportFilterStatus').value;
+    const category = document.getElementById('reportFilterCategory').value;
+    const priority = document.getElementById('reportFilterPriority').value;
+    const sort     = document.getElementById('reportSort').value;
+    let url = `/api/admin/reports?page=${currentReportPage}&per_page=15&sort=${sort}&search=${encodeURIComponent(search)}&status=${status}&category=${encodeURIComponent(category)}&priority=${priority}`;
+    const r = await fetch(url, { credentials:'include' });
+    const d = await r.json();
+    const tbody = document.getElementById('reportsTableBody');
+    if (!d.ok || !d.reports.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-400"><div class="flex flex-col items-center gap-2"><i data-lucide="search-x" class="w-8 h-8 text-slate-300"></i>Tidak ada laporan ditemukan.</div></td></tr>';
+        lucide.createIcons();
+        return;
+    }
+    tbody.innerHTML = d.reports.map(rep => `
+    <tr class="table-row-hover">
+        <td class="px-5 py-3.5">
+            <div class="font-mono text-xs text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
+                <i data-lucide="hash" class="w-3 h-3"></i>${rep.ticket_id}
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${new Date(rep.created_at).toLocaleDateString('id-ID')}</div>
+        </td>
+        <td class="px-4 py-3.5">
+            <div class="font-semibold text-sm text-slate-900 dark:text-white max-w-xs truncate">${rep.title}</div>
+            <div class="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400">
+                <img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rep.full_name)}" class="w-4 h-4 rounded-full inline">
+                ${rep.full_name}${rep.is_anonymous?'<span class="text-slate-400">(Anonim)</span>':''}
+            </div>
+        </td>
+        <td class="px-4 py-3.5 hidden md:table-cell"><span class="text-xs text-slate-500 dark:text-slate-400">${rep.category}</span>${rep.subcategory?`<br><span class="text-[10px] text-slate-400">${rep.subcategory}</span>`:''}</td>
+        <td class="px-4 py-3.5 hidden lg:table-cell"><span class="badge status-${rep.status}">${STATUS_LABEL[rep.status]||rep.status}</span></td>
+        <td class="px-4 py-3.5 hidden lg:table-cell"><span class="badge priority-${rep.priority}">${rep.priority}</span></td>
+        <td class="px-4 py-3.5 hidden xl:table-cell text-xs text-slate-400">${new Date(rep.created_at).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'})}</td>
+        <td class="px-5 py-3.5 text-right">
+            <div class="flex items-center justify-end gap-2">
+                <button onclick="openReportDetail(${rep.id})" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Detail"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                <button onclick="openStatusModal(${rep.id},'${rep.ticket_id}','${rep.status}')" class="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-100 transition-colors" title="Update Status"><i data-lucide="edit" class="w-4 h-4"></i></button>
+            </div>
+        </td>
+    </tr>`).join('');
+    lucide.createIcons();
+
+    const pg = d.pagination;
+    document.getElementById('reportsPaginationInfo').textContent = `Menampilkan ${Math.min((pg.page-1)*15+1, pg.total)}-${Math.min(pg.page*15, pg.total)} dari ${pg.total} laporan`;
+    const pgBtns = document.getElementById('reportsPaginationBtns');
+    pgBtns.innerHTML = '';
+    for (let i = 1; i <= pg.pages; i++) {
+        if (pg.pages > 8 && Math.abs(i - pg.page) > 2 && i !== 1 && i !== pg.pages) {
+            if (i === pg.page - 3 || i === pg.page + 3) pgBtns.innerHTML += `<span class="px-1 text-slate-400">…</span>`;
+            continue;
+        }
+        const act = i === pg.page ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-50';
+        pgBtns.innerHTML += `<button onclick="currentReportPage=${i};loadReports()" class="w-8 h-8 rounded-lg text-sm font-bold ${act} transition-all">${i}</button>`;
+    }
+}
+
+async function openReportDetail(reportId) {
+    document.getElementById('reportModal').classList.add('show');
+    document.getElementById('reportModalContent').innerHTML = '<div class="p-10 text-center text-slate-400"><div class="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-3"></div>Memuat detail...</div>';
+    const r = await fetch(`/api/reports/${reportId}`, { credentials:'include' });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById('reportModalContent').innerHTML = '<div class="p-10 text-center text-red-500">Gagal memuat detail.</div>'; return; }
+    const rep = d.report;
+    const tl  = d.timeline || [];
+    const att = d.attachments || [];
+    document.getElementById('reportModalContent').innerHTML = `
+    <div class="p-6">
+        <div class="flex items-start justify-between mb-5">
+            <div>
+                <div class="font-mono text-xs text-blue-500 mb-1 flex items-center gap-1"><i data-lucide="hash" class="w-3 h-3"></i>${rep.ticket_id}</div>
+                <h2 class="font-extrabold text-xl dark:text-white">${rep.title}</h2>
+                <div class="flex gap-2 mt-2 flex-wrap">
+                    <span class="badge bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300">${rep.category}</span>
+                    <span class="badge status-${rep.status}">${STATUS_LABEL[rep.status]||rep.status}</span>
+                    <span class="badge priority-${rep.priority}">${rep.priority}</span>
+                    ${rep.is_sos ? '<span class="badge bg-red-100 text-red-600"><i data-lucide="alert-triangle" class="w-3 h-3"></i>SOS</span>' : ''}
+                    ${rep.is_anonymous ? '<span class="badge bg-slate-100 text-slate-500"><i data-lucide="eye-off" class="w-3 h-3"></i>Anonim</span>' : ''}
+                </div>
+            </div>
+            <button onclick="document.getElementById('reportModal').classList.remove('show')" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors shrink-0">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 mb-4 flex items-center gap-4">
+            <img src="https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rep.full_name)}" class="w-12 h-12 rounded-xl" alt="">
+            <div class="flex-1 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                <div><span class="text-slate-400 text-xs">Nama:</span><div class="font-semibold dark:text-white">${rep.full_name}</div></div>
+                <div><span class="text-slate-400 text-xs">Email:</span><div class="font-semibold dark:text-white">${rep.email||'—'}</div></div>
+                <div><span class="text-slate-400 text-xs">Telepon:</span><div class="font-semibold dark:text-white">${rep.phone||'—'}</div></div>
+                <div><span class="text-slate-400 text-xs">NIK:</span><div class="font-semibold dark:text-white">${rep.nik||'—'}</div></div>
+            </div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-sm dark:text-slate-300 leading-relaxed mb-4">${rep.description}</div>
+        ${rep.location_name || rep.latitude ? `
+        <div class="flex items-start gap-2 text-sm mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <i data-lucide="map-pin" class="w-4 h-4 text-blue-600 mt-0.5 shrink-0"></i>
+            <div>
+                <div class="font-medium dark:text-white">${rep.location_name||''}</div>
+                <div class="text-slate-500 dark:text-slate-400 text-xs">${rep.address_detail||''} ${rep.district?', '+rep.district:''} ${rep.city?', '+rep.city:''} ${rep.province?', '+rep.province:''}</div>
+                ${rep.latitude ? `<a href="https://maps.google.com/?q=${rep.latitude},${rep.longitude}" target="_blank" class="text-blue-500 text-xs hover:underline mt-0.5 inline-flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i>Buka di Google Maps</a>` : ''}
+            </div>
+        </div>` : ''}
+        ${rep.admin_notes ? `<div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4"><p class="text-xs font-bold text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-1"><i data-lucide="message-square" class="w-3 h-3"></i>Catatan Admin</p><p class="text-sm text-yellow-800 dark:text-yellow-300">${rep.admin_notes}</p></div>` : ''}
+        ${att.length ? `<div class="mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1"><i data-lucide="paperclip" class="w-3 h-3"></i>Lampiran (${att.length})</p><div class="flex flex-wrap gap-2">${att.map(a=>a.file_type==='image'?`<a href="${a.file_url}" target="_blank"><img src="${a.file_url}" class="w-20 h-20 rounded-xl object-cover border border-slate-200 hover:opacity-90 transition-opacity" /></a>`:`<a href="${a.file_url}" class="flex items-center gap-1 text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg" target="_blank"><i data-lucide="file" class="w-3 h-3"></i>Unduh</a>`).join('')}</div></div>` : ''}
+        ${tl.length ? `<div><p class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-1"><i data-lucide="git-branch" class="w-3 h-3"></i>Timeline</p><div class="space-y-3 relative border-l-2 border-slate-200 dark:border-slate-700 pl-4 ml-2">${tl.map(t=>`<div class="relative"><div class="absolute -left-[21px] w-3 h-3 rounded-full bg-blue-500 border-2 border-white dark:border-slate-900"></div><div class="text-sm font-semibold dark:text-white">${t.action}</div>${t.actor_name?`<div class="text-xs text-slate-400">oleh ${t.actor_name}</div>`:''} ${t.notes?`<div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 bg-slate-50 dark:bg-slate-800 rounded p-1.5">${t.notes}</div>`:''}<div class="text-xs text-slate-400 mt-0.5">${new Date(t.created_at).toLocaleString('id-ID')}</div></div>`).join('')}</div></div>` : ''}
+        <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button onclick="openStatusModal(${rep.id},'${rep.ticket_id}','${rep.status}');document.getElementById('reportModal').classList.remove('show')" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white py-2.5 rounded-xl font-bold text-sm hover:from-blue-700 hover:to-blue-600 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2">
+                <i data-lucide="edit" class="w-4 h-4"></i> Update Status
+            </button>
+        </div>
+    </div>`;
+    lucide.createIcons();
+}
+
+function openStatusModal(reportId, ticketId, currentStatus) {
+    currentStatusReportId = reportId;
+    document.getElementById('statusModalTicket').textContent = ticketId;
+    document.getElementById('newStatus').value = currentStatus !== 'pending' ? currentStatus : 'in_review';
+    document.getElementById('adminNote').value = '';
+    document.getElementById('statusModal').classList.add('show');
+    lucide.createIcons();
+}
+
+async function confirmStatusUpdate() {
+    const btn = document.getElementById('statusConfirmBtn');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    const r = await fetch(`/api/admin/reports/${currentStatusReportId}/status`, {
+        method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ status: document.getElementById('newStatus').value, notes: document.getElementById('adminNote').value })
+    });
+    const d = await r.json();
+    showToast(d.ok ? 'success' : 'error', d.msg);
+    btn.disabled = false; btn.textContent = 'Perbarui Status';
+    if (d.ok) { document.getElementById('statusModal').classList.remove('show'); loadReports(); }
+}
+
+// ─── SOS ───
+async function loadSOS() {
+    const r = await fetch('/api/sos/active', { credentials:'include' });
+    const d = await r.json();
+    const el = document.getElementById('sosList');
+    if (!d.ok || !d.sos.length) {
+        el.innerHTML = '<div class="col-span-2 text-center py-16"><div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-3"><i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-500"></i></div><p class="text-slate-500 font-medium">Tidak ada SOS aktif saat ini</p></div>';
+        lucide.createIcons(); return;
+    }
+    el.innerHTML = d.sos.map(s => `
+    <div class="sos-item-card rounded-2xl p-5 shadow-md">
+        <div class="flex items-start justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center sos-badge">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <div>
+                    <div class="font-bold text-slate-900 dark:text-white">${s.full_name}</div>
+                    <div class="text-xs text-slate-400 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i>${new Date(s.created_at).toLocaleString('id-ID')}</div>
+                </div>
+            </div>
+            <span class="badge bg-red-100 text-red-600 sos-badge flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i>AKTIF</span>
+        </div>
+        <div class="space-y-2 text-sm mb-4">
+            <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                <i data-lucide="phone" class="w-4 h-4 shrink-0 text-slate-400"></i> ${s.phone||'—'}
+            </div>
+            <div class="flex items-start gap-2 text-slate-600 dark:text-slate-400">
+                <i data-lucide="map-pin" class="w-4 h-4 shrink-0 mt-0.5 text-blue-500"></i>
+                <div>
+                    ${s.address ? `<div>${s.address}</div>` : ''}
+                    <div class="font-mono text-xs text-slate-400 mt-0.5">${s.latitude}, ${s.longitude}</div>
+                    <a href="https://maps.google.com/?q=${s.latitude},${s.longitude}" target="_blank" class="text-blue-500 text-xs hover:underline mt-1 inline-flex items-center gap-1">
+                        <i data-lucide="navigation" class="w-3 h-3"></i> Buka Rute di Google Maps
+                    </a>
+                </div>
+            </div>
+            ${s.message ? `<div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-red-700 dark:text-red-400 text-xs flex items-start gap-2"><i data-lucide="message-square" class="w-3 h-3 shrink-0 mt-0.5"></i>"${s.message}"</div>` : ''}
+        </div>
+        <div class="flex gap-2">
+            <button onclick="resolveSOS(${s.id})" class="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-2 rounded-xl text-sm font-bold hover:from-emerald-700 hover:to-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1">
+                <i data-lucide="check" class="w-4 h-4"></i> Tandai Selesai
+            </button>
+        </div>
+    </div>`).join('');
+    lucide.createIcons();
+}
+
+async function resolveSOS(sosId) {
+    const r = await fetch(`/api/sos/${sosId}/resolve`, { method:'PUT', credentials:'include' });
+    const d = await r.json();
+    showToast(d.ok ? 'success' : 'error', d.msg);
+    if (d.ok) loadSOS();
+}
+
+// ─── USERS ───
+async function loadUsers() {
+    const search = document.getElementById('userSearch').value;
+    const r = await fetch(`/api/admin/users?page=${currentUserPage}&per_page=15&search=${encodeURIComponent(search)}`, { credentials:'include' });
+    const d = await r.json();
+    const tbody = document.getElementById('usersTableBody');
+    if (!d.ok || !d.users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-400"><div class="flex flex-col items-center gap-2"><i data-lucide="search-x" class="w-8 h-8 text-slate-300"></i>Tidak ada pengguna ditemukan.</div></td></tr>';
+        lucide.createIcons();
+        return;
+    }
+    tbody.innerHTML = d.users.map(u => `
+    <tr class="table-row-hover transition-colors">
+        <td class="px-5 py-3.5">
+            <div class="flex items-center gap-3">
+                <img src="${u.avatar_url||`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.full_name)}`}" class="w-9 h-9 rounded-xl object-cover flex-shrink-0" alt="">
+                <div>
+                    <div class="font-semibold text-sm dark:text-white">${u.full_name}</div>
+                    <div class="text-xs text-slate-400">${u.email}</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-4 py-3.5 hidden md:table-cell">
+            <div class="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i>${u.phone||'—'}</div>
+        </td>
+        <td class="px-4 py-3.5 hidden lg:table-cell text-xs font-mono text-slate-500 dark:text-slate-400">${u.nik||'—'}</td>
+        <td class="px-4 py-3.5 hidden lg:table-cell">
+            <div class="text-sm font-bold text-blue-600 flex items-center gap-1"><i data-lucide="file-text" class="w-3 h-3"></i>${u.report_count||0}</div>
+            <div class="text-[10px] text-slate-400">laporan</div>
+        </td>
+        <td class="px-4 py-3.5 hidden xl:table-cell text-xs text-slate-400">${u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
+        <td class="px-4 py-3.5">
+            <span class="badge ${u.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${u.is_active ? 'Aktif' : 'Nonaktif'}</span>
+        </td>
+        <td class="px-5 py-3.5 text-right">
+            <div class="flex items-center justify-end gap-2">
+                <button onclick="openUserDetail(${u.id})" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Detail"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                <button onclick="toggleUser(${u.id},${u.is_active},'${u.full_name}')" class="p-1.5 rounded-lg ${u.is_active?'bg-red-50 text-red-500 hover:bg-red-100':'bg-emerald-50 text-emerald-500 hover:bg-emerald-100'} transition-colors" title="${u.is_active?'Nonaktifkan':'Aktifkan'}">
+                    <i data-lucide="${u.is_active?'user-x':'user-check'}" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </td>
+    </tr>`).join('');
+    lucide.createIcons();
+
+    const pg = d.pagination;
+    document.getElementById('usersPaginationInfo').textContent = `${pg.total} pengguna ditemukan`;
+    const pgBtns = document.getElementById('usersPaginationBtns');
+    pgBtns.innerHTML = '';
+    for (let i = 1; i <= pg.pages; i++) {
+        const act = i === pg.page ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 hover:bg-blue-50';
+        pgBtns.innerHTML += `<button onclick="currentUserPage=${i};loadUsers()" class="w-8 h-8 rounded-lg text-sm font-bold ${act} transition-all">${i}</button>`;
+    }
+}
+
+async function openUserDetail(userId) {
+    document.getElementById('userModal').classList.add('show');
+    document.getElementById('userModalContent').innerHTML = '<div class="p-10 text-center text-slate-400"><div class="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-3"></div>Memuat data pengguna...</div>';
+    const r = await fetch(`/api/admin/users/${userId}`, { credentials:'include' });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById('userModalContent').innerHTML = '<div class="p-10 text-center text-red-500">Gagal memuat data.</div>'; return; }
+    const u = d.user;
+    const reports = d.reports || [];
+    document.getElementById('userModalContent').innerHTML = `
+    <div class="p-6">
+        <div class="flex items-start justify-between mb-5">
+            <div class="flex items-center gap-4">
+                <img src="${u.avatar_url||`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.full_name)}`}" class="w-16 h-16 rounded-2xl object-cover" alt="">
+                <div>
+                    <h2 class="font-extrabold text-xl dark:text-white">${u.full_name}</h2>
+                    <span class="badge ${u.is_active?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'} mt-1">${u.is_active?'Aktif':'Nonaktif'}</span>
+                </div>
+            </div>
+            <button onclick="document.getElementById('userModal').classList.remove('show')" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 shrink-0">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-sm mb-4">
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="mail" class="w-3 h-3"></i>Email</div><div class="font-medium dark:text-white">${u.email}</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i>Telepon</div><div class="font-medium dark:text-white">${u.phone||'—'}</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="id-card" class="w-3 h-3"></i>NIK</div><div class="font-mono font-medium dark:text-white">${u.nik||'—'}</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>Bergabung</div><div class="font-medium dark:text-white">${u.created_at?new Date(u.created_at).toLocaleDateString('id-ID',{dateStyle:'long'}):'—'}</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="log-in" class="w-3 h-3"></i>Login Terakhir</div><div class="font-medium dark:text-white">${u.last_login?new Date(u.last_login).toLocaleString('id-ID'):'—'}</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i>Total Login</div><div class="font-medium dark:text-white">${u.login_count||0}x</div></div>
+            <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="file-text" class="w-3 h-3"></i>Total Laporan</div><div class="font-bold text-blue-600">${u.total_reports||0}</div></div>
+        </div>
+        ${u.address ? `<div class="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 mb-4"><i data-lucide="map-pin" class="w-4 h-4 shrink-0 mt-0.5 text-blue-500"></i>${u.address}</div>` : ''}
+        ${reports.length ? `
+        <div>
+            <p class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-1"><i data-lucide="list" class="w-3 h-3"></i>10 Laporan Terakhir</p>
+            <div class="space-y-2">
+                ${reports.map(rep=>`<div class="flex items-center justify-between text-sm p-3 rounded-xl bg-slate-50 dark:bg-slate-800"><div class="flex-1 min-w-0"><div class="font-mono text-xs text-blue-500 mb-0.5">${rep.ticket_id}</div><div class="font-medium dark:text-white truncate">${rep.title}</div></div><span class="badge status-${rep.status} ml-3">${STATUS_LABEL[rep.status]||rep.status}</span></div>`).join('')}
+            </div>
+        </div>` : '<p class="text-sm text-slate-400 text-center py-4">Belum ada laporan.</p>'}
+        <div class="flex gap-3 mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button onclick="toggleUser(${u.id},${u.is_active},'${u.full_name}');document.getElementById('userModal').classList.remove('show')" class="flex-1 ${u.is_active?'bg-red-50 text-red-600 hover:bg-red-100':'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'} py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1">
+                <i data-lucide="${u.is_active?'user-x':'user-check'}" class="w-4 h-4"></i> ${u.is_active ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}
+            </button>
+        </div>
+    </div>`;
+    lucide.createIcons();
+}
+
+async function toggleUser(userId, isActive, name) {
+    if (!confirm(`${isActive ? 'Nonaktifkan' : 'Aktifkan'} akun ${name}?`)) return;
+    const r = await fetch(`/api/admin/users/${userId}/toggle`, { method:'PUT', credentials:'include' });
+    const d = await r.json();
+    showToast(d.ok ? 'success' : 'error', d.msg);
+    if (d.ok) loadUsers();
+}
+
+// ─── NOTIFICATIONS ───
+async function loadAdminNotifications() {
+    const r = await fetch('/api/admin/notifications', { credentials:'include' });
+    const d = await r.json();
+    if (!d.ok) return;
+    const badges = [document.getElementById('adminNotifBadge'), document.getElementById('headerNotifBadge')];
+    if (d.unread > 0) {
+        badges.forEach(b => { if(b){ b.textContent = d.unread > 9 ? '9+' : d.unread; b.classList.remove('hidden'); if(b.id==='headerNotifBadge') b.classList.add('flex'); }});
+    } else {
+        badges.forEach(b => { if(b) { b.classList.add('hidden'); b.classList.remove('flex'); }});
+    }
+    const el = document.getElementById('adminNotifList');
+    if (!d.notifications.length) {
+        el.innerHTML = '<div class="px-5 py-10 text-center text-slate-400 flex flex-col items-center gap-2"><i data-lucide="bell-off" class="w-8 h-8 text-slate-300"></i>Tidak ada notifikasi.</div>';
+        lucide.createIcons();
+        return;
+    }
+    const typeIcon = { new_report:'file-text', sos:'alert-triangle', user_register:'user-plus', report_update:'edit', system:'settings' };
+    const typeColor = { new_report:'text-blue-600 bg-blue-50', sos:'text-red-600 bg-red-50', user_register:'text-purple-600 bg-purple-50', report_update:'text-orange-600 bg-orange-50', system:'text-slate-600 bg-slate-100' };
+    el.innerHTML = d.notifications.map(n => `
+    <div class="notif-item px-5 py-4 ${n.is_read?'':'unread'}">
+        <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${typeColor[n.type]||'text-slate-500 bg-slate-100'}">
+                <i data-lucide="${typeIcon[n.type]||'bell'}" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm dark:text-white flex items-center gap-2">${n.title}${!n.is_read?'<span class="w-2 h-2 rounded-full bg-blue-500 shrink-0 inline-block"></span>':''}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">${n.message}</div>
+                <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i>${new Date(n.created_at).toLocaleString('id-ID')}</div>
+            </div>
+        </div>
+    </div>`).join('');
+    lucide.createIcons();
+}
+
+async function readAllAdminNotif() {
+    await fetch('/api/admin/notifications/read-all', { method:'PUT', credentials:'include' });
+    loadAdminNotifications();
+}
+
+// ─── SETTINGS ───
+async function loadSettings() {
+    const r = await fetch('/api/admin/settings', { credentials:'include' });
+    const d = await r.json();
+    if (!d.ok) return;
+    const form = document.getElementById('settingsForm');
+    for (const [k, v] of Object.entries(d.settings)) {
+        const el = form.querySelector(`[name="${k}"]`);
+        if (el) el.value = v || '';
+    }
+}
+
+async function saveSettings(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {};
+    new FormData(form).forEach((v, k) => data[k] = v);
+    const r = await fetch('/api/admin/settings', { method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    const d = await r.json();
+    showToast(d.ok ? 'success' : 'error', d.msg);
+}
+
+// ─── ADMIN PROFILE ───
+function fillAdminProfile(user) {
+    document.getElementById('adminProfileContent').innerHTML = `
+    <div class="grid grid-cols-2 gap-4 text-sm">
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i>Nama</div><div class="font-semibold dark:text-white">${user.full_name}</div></div>
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="mail" class="w-3 h-3"></i>Email</div><div class="font-semibold dark:text-white">${user.email}</div></div>
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3"></i>Role</div><div class="font-bold text-blue-600 capitalize">${user.role}</div></div>
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="log-in" class="w-3 h-3"></i>Login Terakhir</div><div class="font-semibold dark:text-white">${user.last_login?new Date(user.last_login).toLocaleString('id-ID'):'—'}</div></div>
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i>Total Login</div><div class="font-semibold dark:text-white">${user.login_count||0}x</div></div>
+        <div><div class="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>Bergabung</div><div class="font-semibold dark:text-white">${user.created_at?new Date(user.created_at).toLocaleDateString('id-ID',{dateStyle:'long'}):'—'}</div></div>
+    </div>`;
+    lucide.createIcons();
+}
+
+async function adminChangePassword(e) {
+    e.preventDefault();
+    const newPw   = document.getElementById('adminNewPw').value;
+    const confirm = document.getElementById('adminConfirmPw').value;
+    if (newPw !== confirm) { showToast('error','Password tidak cocok.'); return; }
+    const r = await fetch('/api/auth/change-password', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old_password: document.getElementById('adminOldPw').value, new_password: newPw}) });
+    const d = await r.json();
+    showToast(d.ok ? 'success' : 'error', d.msg);
+    if (d.ok) e.target.reset();
+}
+
+// ─── MISC ───
+async function handleLogout() {
+    const r = await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
+    const d = await r.json();
+    window.location.href = d.redirect || '/login';
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.getElementById('themeIcon').setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+    lucide.createIcons();
+    if (adminMap) {
+        setTimeout(() => {
+            adminMap.invalidateSize();
+            // Re-render charts with new colors
+            if (document.getElementById('panel-dashboard').classList.contains('active')) {
+                loadDashboard();
+            }
+        }, 200);
+    } else {
+        if (document.getElementById('panel-dashboard').classList.contains('active')) {
+            loadDashboard();
+        }
+    }
+}
+
+async function refreshAll() {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('animate-spin');
+    await loadDashboard();
+    await loadAdminNotifications();
+    setTimeout(() => icon.classList.remove('animate-spin'), 800);
+    showToast('success', 'Data berhasil diperbarui.');
+}
+
+function globalSearchHandler(val) {
+    if (!val) return;
+    setPanel('reports');
+    document.getElementById('reportSearch').value = val;
+    loadReports();
+}
+
+function showToast(type, msg) {
+    const t = document.createElement('div');
+    const colors = { success:'bg-emerald-600/95', error:'bg-red-600/95', info:'bg-blue-600/95' };
+    const icons = { success:'check-circle-2', error:'alert-circle', info:'info' };
+    t.className = `toast text-white ${colors[type]||colors.info} shadow-2xl backdrop-blur-sm`;
+    t.innerHTML = `<i data-lucide="${icons[type]||icons.info}" class="w-4 h-4 shrink-0"></i>${msg}`;
+    document.body.appendChild(t); lucide.createIcons();
+    setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(30px)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); }, 4000);
+}
+
+let debounceTimer;
+function debounce(fn, delay) {
+    return function(...args) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// Close modals on backdrop click
+['reportModal','userModal','statusModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
+});
+
+// Expose untuk tombol di peta panel
+window.mapLoadReports = mapLoadReports;
+window.mapLoadSOS     = mapLoadSOS;
+window.mapClearLayers = mapClearLayers;
+window.mapFitBounds   = mapFitBounds;
+window.switchBasemap  = switchBasemap;
+window.mapFilterChange = mapFilterChange;
+
+// ─── START ───
+init();
+</script>
+</body>
+</html>
