@@ -139,5 +139,3 @@ Junior Full-Stack Developer
 [![Email](https://img.shields.io/badge/Email-fardhanyundr@gmail.com-red?logo=gmail)](mailto:fardhanyundr@gmail.com)
 
 ---
-
-*Built with ❤️ using Flask + MySQL + Google Maps API*
