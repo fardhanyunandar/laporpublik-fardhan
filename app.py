@@ -2196,6 +2196,7 @@ def toggle_user(user_id):
 # ─────────────────────────────────────────────
 # SOS
 # ─────────────────────────────────────────────
+
 @app.route('/api/sos', methods=['POST'])
 @login_required
 def trigger_sos():
@@ -2213,6 +2214,9 @@ def trigger_sos():
         if not lat or not lng:
             return jsonify({'ok': False, 'msg': 'Koordinat lokasi wajib disertakan.'}), 400
 
+        # Eksekusi Insert
+        # Catatan: Jika menggunakan MySQL/PostgreSQL, pastikan driver Anda mendukung pengembalian ID otomatis,
+        # atau sesuaikan sintaks (misal menggunakan RETURNING id untuk PostgreSQL)
         sos_id = db.execute("""
             INSERT INTO sos_events (user_id, latitude, longitude, address, message)
             VALUES (%s, %s, %s, %s, %s)
@@ -2266,6 +2270,48 @@ def active_sos():
 
     except Exception as e:
         logger.error(f'Get active SOS error: {e}')
+        return jsonify({'ok': False, 'msg': 'Terjadi kesalahan server.'}), 500
+
+
+@app.route('/api/sos/<int:sos_id>/resolve', methods=['POST', 'PUT'])
+@admin_required
+def resolve_sos(sos_id):
+    """SOLUSI ERROR 404: Mengubah status SOS menjadi diselesaikan/resolved."""
+    try:
+        # 1. Cek apakah event SOS tersebut ada di database
+        sos_event = db.execute(
+            "SELECT id, user_id FROM sos_events WHERE id=%s", 
+            (sos_id,), 
+            fetch='one'
+        )
+        
+        if not sos_event:
+            return jsonify({'ok': False, 'msg': 'Event SOS tidak ditemukan.'}), 404
+
+        # 2. Update status SOS menjadi 'resolved' atau 'resolved' (sesuaikan dengan enum DB kamu)
+        db.execute("""
+            UPDATE sos_events 
+            SET status='resolved' 
+            WHERE id=%s
+        """, (sos_id,), commit=True)
+
+        # 3. Kirim notifikasi ke user bahwa bantuan telah selesai ditangani
+        push_notification(
+            sos_event['user_id'],
+            'SOS Ditangani',
+            'Laporan darurat Anda telah dinyatakan selesai oleh tim admin.',
+            'info'
+        )
+
+        logger.info(f'SOS ID {sos_id} resolved by admin {session.get("user_id")}')
+
+        return jsonify({
+            'ok': True, 
+            'msg': f'SOS #{sos_id} berhasil diselesaikan.'
+        })
+
+    except Exception as e:
+        logger.error(f'Resolve SOS error for ID {sos_id}: {e}')
         return jsonify({'ok': False, 'msg': 'Terjadi kesalahan server.'}), 500
 
 
